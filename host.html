@@ -80,6 +80,13 @@ body.authed.offline #alert{display:block}
   gap:calc(clamp(12px,1.2vw,22px) * var(--cs,1));padding:calc(clamp(12px,1.8vh,26px) * var(--cs,1)) clamp(18px,1.6vw,30px)}
 .choices.long .ch .t{flex:1;font-size:calc(clamp(26px,2.3vw,46px) * var(--cs,1))}
 .choices.long .ch:last-child:nth-child(odd){grid-column:1/-1}
+/* 한 줄에 하나씩(q2 다섯 줄) — 줄 높이를 번호 원이 아니라 글자가 정하도록 원·여백을 줄인다 */
+.choices.rows{gap:clamp(8px,1.1vh,16px);max-width:1500px;width:100%;margin:0 auto}
+.choices.rows .ch{padding:calc(clamp(8px,1.2vh,16px) * var(--cs,1)) clamp(18px,1.6vw,30px)}
+.choices.rows .ch .n{width:calc(clamp(40px,3vw,58px) * var(--cs,1));height:calc(clamp(40px,3vw,58px) * var(--cs,1));font-size:calc(clamp(22px,1.7vw,32px) * var(--cs,1))}
+.choices.rows .ch .t{font-size:calc(clamp(28px,2.5vw,48px) * var(--cs,1))}
+.qview.revealed .choices.rows .ch .n{width:calc(clamp(36px,2.6vw,50px) * var(--cs,1));height:calc(clamp(36px,2.6vw,50px) * var(--cs,1));font-size:calc(clamp(20px,1.5vw,28px) * var(--cs,1))}
+.qview.revealed .choices.rows .ch .t{font-size:calc(clamp(26px,2.1vw,40px) * var(--cs,1))}
 
 /* 정답 공개 — 구성은 그대로, 정답 보기만 노랗게 */
 .ch.correct{background:var(--correct);border-color:var(--correct)}
@@ -98,6 +105,10 @@ body.authed.offline #alert{display:block}
   text-align:center;flex:1 1 auto;min-height:0;overflow:hidden;word-break:keep-all;
   display:flex;flex-direction:column;justify-content:center}
 .answerbox p+p{margin-top:clamp(3px,.6vh,9px)}
+.egrid{display:grid;grid-template-columns:repeat(var(--n,5),1fr);gap:clamp(8px,1.2vw,24px)}
+.egrid div{display:flex;flex-direction:column;align-items:center;gap:.15em}
+.egrid b{font-weight:800}
+.egrid span{font-weight:600;color:rgba(58,58,56,.7);font-variant-numeric:tabular-nums}
 
 /* 화면 맨 아래 묶음 — 제출현황 + 페이지 점. 항상 맨 아래에 붙어서 문제·보기를 안 민다 */
 .qbottom{margin-top:auto;flex:0 0 auto}

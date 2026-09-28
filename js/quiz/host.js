@@ -263,6 +263,7 @@ function choiceHtml(c) {
 // 보기 배치 — 짧은 보기(100회, 충전기 · 이어폰)는 부안처럼 가로 한 줄에 전부,
 // 긴 보기(문장·순서 나열)는 2열로 두고 번호를 왼쪽에 붙인다
 function choiceLayout(q) {
+  if (q.choiceCols) return { cls: q.choiceCols === 1 ? 'long rows' : 'long', n: q.choiceCols };   // 문항에서 열 수를 정해 둔 경우 (q2: 다섯 줄)
   const longest = Math.max(...q.choices.map(c => c.split(' — ')[0].length));
   return longest <= 12 && !q.choices.some(c => c.includes(' — ')) ? { cls: '', n: q.choices.length } : { cls: 'long', n: 2 };
 }
@@ -320,7 +321,11 @@ export function questionView() {
   const veil = show => (show ? '' : 'visibility:hidden;');
   let body = `${badge}<div class="q">${nl2br(q.question)}</div>
     <div class="choices ${cls}" style="--n:${n};${veil(p >= 1)}">${ch}</div>`;
-  if (revealed && q.explanation) body += `<div class="answerbox">${sentences(q.explanation)}</div>`;
+  if (revealed && q.explanationGrid) {
+    // 표 해설 — 이름을 나란히, 그 아래 값 (q1: 대학 이름 아래 연도)
+    body += `<div class="answerbox"><div class="egrid" style="--n:${q.explanationGrid.length}">${q.explanationGrid
+      .map(([k, v]) => `<div><b>${esc(k)}</b><span>${esc(v)}</span></div>`).join('')}</div></div>`;
+  } else if (revealed && q.explanation) body += `<div class="answerbox">${sentences(q.explanation)}</div>`;
 
   const foot = revealed
     ? `<div class="foot"><div class="tmeta"><div class="tstat"><b>${right.length}</b>조 정답 · ${cnt}조 제출</div></div><div class="chips">${revealChips}</div></div>`
