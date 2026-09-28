@@ -1,0 +1,47 @@
+/* 라인교육연구소 브랜드 톤 — 정읍 SDGs·가야면 퀴즈 앱과 같은 팔레트 */
+
+:root {
+  --bg: #2c2c2a;       /* 무대 배경 */
+  --soft: #3a3a38;     /* 패널 */
+  --panel2: #454541;   /* 한 단계 밝은 패널 */
+  --ink: #fdf2dc;      /* 어두운 면 위 글씨 */
+  --ink2: #a9a7a0;     /* 보조 */
+  --ink3: #7c7a73;     /* 더 흐린 보조 */
+  --line: rgba(253, 242, 220, .14);
+  --line2: rgba(253, 242, 220, .07);
+  --yellow: #fdce0f;   /* 시그니처 — 작은 면적에만 */
+  --fill: #fdf2dc;     /* 넓은 면 — 샛노랑 대신 크림 */
+  --fillInk: #2c2c2a;
+  --no: #e8705f;       /* 오류·오답 코랄 */
+
+  /* 분야 3색 (작은 점으로만) */
+  --f-region: #8B9DC7;
+  --f-tour: #F3A283;
+  --f-social: #97BB7B;
+
+  --font: 'Pretendard Variable', Pretendard, -apple-system, 'Malgun Gothic', '맑은 고딕', sans-serif;
+}
+
+* { box-sizing: border-box; margin: 0; padding: 0; -webkit-tap-highlight-color: transparent; }
+
+html, body { min-height: 100%; }
+
+[hidden] { display: none !important; }
+
+body {
+  font-family: var(--font);
+  background: var(--bg);
+  color: var(--ink);
+  min-height: 100dvh;
+  padding: env(safe-area-inset-top) 0 env(safe-area-inset-bottom);
+  word-break: keep-all;
+  -webkit-font-smoothing: antialiased;
+}
+
+button { font: inherit; color: inherit; border: 0; background: none; cursor: pointer; touch-action: manipulation; }
+
+:focus-visible { outline: 3px solid var(--yellow); outline-offset: 3px; }
+
+@media (prefers-reduced-motion: reduce) {
+  * { animation-duration: .01ms !important; animation-iteration-count: 1 !important; transition-duration: .01ms !important; }
+}

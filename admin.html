@@ -1,0 +1,133 @@
+<!doctype html>
+<html lang="ko">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<meta name="theme-color" content="#2c2c2a">
+<title>운영자 · 2026 호남권 SW 창업아이디어 경진대회</title>
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/gh/orioncactus/pretendard@v1.3.9/dist/web/variable/pretendardvariable-dynamic-subset.min.css">
+<link rel="stylesheet" href="css/tokens.css">
+<style>
+body:not(.authed) .auth-only{display:none !important}
+body.authed .login-wrap{display:none}
+
+.bar{display:flex;align-items:center;gap:12px;padding:15px 24px;border-bottom:1px solid var(--line);position:sticky;top:0;background:var(--bg);z-index:5}
+.bar .t{font-size:15px;font-weight:700;letter-spacing:-.02em}
+.bar .h{font-size:15px;font-weight:800;color:var(--yellow)}
+.bar .sp{flex:1}
+.dot{width:9px;height:9px;border-radius:50%;background:var(--no);flex:none}
+.dot.live{background:var(--yellow)}
+.bar button{font-size:13px;font-weight:700;color:var(--ink2);padding:7px 14px;border-radius:999px;background:var(--soft)}
+
+#app{max-width:1280px;margin:0 auto;padding:22px 24px 48px;display:flex;flex-direction:column;gap:18px}
+
+/* 카운터 */
+.counter{display:grid;grid-template-columns:1.6fr repeat(6,1fr);gap:10px}
+.counter > div{background:var(--soft);border-radius:18px;padding:16px 16px 14px}
+.counter .k{font-size:12.5px;font-weight:700;color:var(--ink3)}
+.counter .v{font-size:22px;font-weight:700;color:var(--ink2);margin-top:4px;font-variant-numeric:tabular-nums}
+.counter .v b{color:var(--fill);font-size:30px;font-weight:800}
+.big-count .v b{font-size:44px;color:var(--yellow)}
+.big-count .chk{font-size:13px;font-weight:700;margin-top:6px}
+.chk.ok{color:var(--ink2)}
+.chk.bad,.warn{color:var(--no)}
+.stage-count.bad{box-shadow:inset 0 0 0 2px var(--no)}
+.stage-count .warn{font-size:12px;font-weight:700;margin-top:2px}
+
+/* 패널 */
+.panel{background:var(--soft);border-radius:20px;padding:20px}
+.panel-head{display:flex;align-items:baseline;gap:12px;margin-bottom:14px}
+.panel-head h2{font-size:18px;font-weight:800}
+.hint{font-size:13px;color:var(--ink3);font-weight:500}
+
+.tablewrap{overflow-x:auto}
+table.grid{width:100%;border-collapse:separate;border-spacing:5px;min-width:980px}
+.grid thead th{font-size:13px;font-weight:700;color:var(--ink3);text-align:left;padding:0 8px 4px}
+.grid .tn{font-size:17px;font-weight:800;text-align:center;background:var(--panel2);border-radius:10px;width:58px}
+.grid td{background:var(--bg);border-radius:10px;vertical-align:top;font-size:13px}
+.phone{padding:9px 10px;white-space:nowrap;width:150px}
+.phone .on{color:var(--yellow);font-weight:700}
+.phone .off{color:var(--ink3)}
+.mini{margin-left:8px;font-size:12px;font-weight:700;padding:4px 10px;border-radius:8px;background:var(--panel2);color:var(--no)}
+.sub.empty{color:var(--ink3);text-align:center;padding:12px 6px}
+.sub.done button{display:grid;grid-template-columns:auto 1fr;gap:2px 8px;width:100%;text-align:left;padding:9px 10px;border-radius:10px;background:var(--panel2)}
+.sub.done button:hover{box-shadow:inset 0 0 0 2px var(--yellow)}
+.sub .t{font-weight:800;color:var(--yellow)}
+.sub .x{justify-self:end;color:var(--ink2)}
+.sub .s{grid-column:1/-1;color:var(--ink);font-weight:600;line-height:1.4;
+  display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical;overflow:hidden}
+.row-actions{display:flex;justify-content:flex-end;margin-top:12px}
+.ghost{font-size:13.5px;font-weight:700;padding:9px 16px;border-radius:12px;border:1.5px solid var(--line);color:var(--ink2)}
+.danger{color:var(--no)}
+
+.exports{display:grid;grid-template-columns:repeat(3,1fr);gap:10px}
+.exports button{display:flex;flex-direction:column;gap:4px;text-align:left;padding:16px 18px;border-radius:16px;background:var(--panel2)}
+.exports button:first-child{background:var(--fill);color:var(--fillInk)}
+.exports button:first-child span{color:rgba(44,44,42,.6)}
+.exports b{font-size:16px;font-weight:800}
+.exports span{font-size:12.5px;color:var(--ink3);font-weight:500}
+.exports button:disabled{opacity:.5}
+
+/* 상세 */
+.modal{position:fixed;inset:0;z-index:20;background:rgba(0,0,0,.6);display:flex;justify-content:flex-end}
+.sheet{width:min(640px,100%);height:100%;overflow:auto;background:var(--bg);padding:24px 26px 40px;display:flex;flex-direction:column;gap:16px;box-shadow:-10px 0 40px rgba(0,0,0,.4)}
+.sheet-head{display:flex;gap:12px;align-items:flex-start}
+.sheet-head > div{flex:1}
+.sheet-head h3{font-size:24px;font-weight:800;letter-spacing:-.03em;margin:4px 0}
+.sheet .k{font-size:13px;color:var(--ink3);font-weight:600}
+.sheet .x{width:38px;height:38px;border-radius:50%;background:var(--soft);font-size:16px;font-weight:800}
+.fv{background:var(--soft);border-radius:14px;padding:14px 16px}
+.fl{font-size:12.5px;font-weight:700;color:var(--yellow);margin-bottom:6px}
+.fx{font-size:15.5px;line-height:1.65;white-space:pre-wrap;word-break:keep-all;overflow-wrap:anywhere}
+.shots{display:flex;flex-direction:column;gap:10px}
+.shots img{width:100%;border-radius:10px;display:block}
+.pdf{color:var(--fill);font-weight:700;font-size:15px}
+.sheet-foot{display:flex;justify-content:flex-end;margin-top:auto;padding-top:10px}
+
+/* 로그인 */
+.login-wrap{min-height:80dvh;display:flex;align-items:center;justify-content:center;padding:24px 16px}
+.login{width:min(400px,100%);background:var(--soft);border-radius:22px;padding:28px;display:flex;flex-direction:column;gap:12px}
+.login h1{font-size:22px;font-weight:800;margin-bottom:4px}
+.login input{font:inherit;font-size:16px;padding:13px 15px;border-radius:12px;border:1.5px solid var(--line);background:var(--bg);color:var(--ink)}
+.login button{font-size:16px;font-weight:800;padding:14px;border-radius:12px;background:var(--fill);color:var(--fillInk);margin-top:4px}
+.login .msg{font-size:14px;color:var(--no);min-height:1em}
+
+@media (max-width:900px){
+  .counter{grid-template-columns:repeat(2,1fr)}
+  .big-count{grid-column:1/-1}
+  .exports{grid-template-columns:1fr}
+  #app,.bar{padding-left:16px;padding-right:16px}
+  .bar .t{display:none}
+}
+</style>
+</head>
+<body>
+
+<div class="bar">
+  <span class="dot" id="dot"></span>
+  <div class="t">2026 호남권 SW 창업아이디어 경진대회</div>
+  <div class="h">운영자</div>
+  <div class="sp"></div>
+  <a class="auth-only" href="board.html" target="_blank" rel="noopener"><button>현황판 ↗</button></a>
+  <a class="auth-only" href="host.html" target="_blank" rel="noopener"><button>퀴즈 진행 ↗</button></a>
+  <button class="auth-only" id="logout">로그아웃</button>
+</div>
+
+<div class="login-wrap">
+  <form class="login" id="login">
+    <h1>운영자 로그인</h1>
+    <input id="email" type="email" autocomplete="username" value="admin@laain.kr" required>
+    <input id="password" type="password" autocomplete="current-password" placeholder="비밀번호" required>
+    <div class="msg" id="login-msg"></div>
+    <button id="login-btn">로그인</button>
+  </form>
+</div>
+
+<main id="app" class="auth-only"><div class="panel">불러오는 중…</div></main>
+
+<script type="module">
+import { startAdmin } from './js/admin.js';
+startAdmin();
+</script>
+</body>
+</html>

@@ -1,0 +1,51 @@
+{
+  "rules": {
+    "public": {
+      ".read": true,
+      ".write": "auth != null",
+      "$team": {
+        ".write": "auth != null",
+        "$stage": {
+          ".write": true,
+          ".validate": "$team.matches(/^([1-9]|10)$/) && $stage.matches(/^s[1-5]$/) && newData.child('submittedAt').isNumber() && newData.child('summary').isString() && newData.child('summary').val().length <= 200"
+        }
+      }
+    },
+    "private": {
+      ".read": "auth != null",
+      ".write": "auth != null",
+      "$team": {
+        ".read": true,
+        ".write": "auth != null",
+        "$stage": {
+          ".write": true,
+          ".validate": "$team.matches(/^([1-9]|10)$/) && $stage.matches(/^s[1-5]$/) && newData.child('submittedAt').isNumber() && newData.child('fields').exists()"
+        }
+      }
+    },
+    "claims": {
+      ".read": true,
+      ".write": "auth != null",
+      "$team": {
+        ".write": "auth != null || !data.exists() || data.child('released').val() === true || (newData.exists() && data.child('device').val() === newData.child('device').val())",
+        ".validate": "$team.matches(/^([1-9]|10)$/) && newData.child('device').isString() && newData.child('at').isNumber() && (!newData.child('released').exists() || newData.child('released').isBoolean())"
+      }
+    },
+    "quiz": {
+      "state":   { ".read": "auth != null", ".write": "auth != null" },
+      "live":    { ".read": true,  ".write": "auth != null" },
+      "answers": {
+        ".read": "auth != null",
+        ".write": "auth != null",
+        "$qid": {
+          "$team": {
+            ".write": "root.child('quiz/live/qid').val() === $qid && root.child('quiz/live/open').val() === true",
+            ".validate": "$team.matches(/^([1-9]|10)$/) && newData.child('choice').isNumber() && newData.child('ms').isNumber() && newData.child('at').isNumber()"
+          }
+        }
+      }
+    },
+    "session": { ".read": true, ".write": "auth != null" },
+    "config":  { ".read": false, ".write": false }
+  }
+}

@@ -1,0 +1,7 @@
+# 내부 문서·로컬 설정은 올리지 않는다
+honam-sw-webapp-spec.md
+*.skill
+.claude/
+.firebase/
+*.log
+buanforum/

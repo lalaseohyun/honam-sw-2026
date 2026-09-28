@@ -1,0 +1,127 @@
+<!doctype html>
+<html lang="ko">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<meta name="theme-color" content="#2c2c2a">
+<title>진행 현황 · 2026 호남권 SW 창업아이디어 경진대회</title>
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/gh/orioncactus/pretendard@v1.3.9/dist/web/variable/pretendardvariable-dynamic-subset.min.css">
+<link rel="stylesheet" href="css/tokens.css">
+<style>
+/* 프로젝터용 — 최소 글자 24px, 칸 클릭 없음 (사양서 §3, §5, §11) */
+body{display:flex;flex-direction:column;height:100dvh;overflow:hidden;font-size:24px;cursor:default;user-select:none}
+
+.bar{display:flex;align-items:center;gap:18px;padding:16px 32px;border-bottom:1px solid var(--line);flex:none}
+.bar .t{font-size:24px;font-weight:700;letter-spacing:-.02em}
+.bar .h{font-size:32px;font-weight:800;letter-spacing:-.03em;margin-left:6px}
+.bar .sp{flex:1}
+.pill{font-size:24px;font-weight:700;background:rgba(253,242,220,.14);color:var(--fill);padding:8px 22px;border-radius:999px;white-space:nowrap}
+.pill b{color:var(--yellow)}
+.dot{width:14px;height:14px;border-radius:50%;background:var(--no);flex:none}
+.dot.live{background:var(--yellow)}
+
+/* 10×5 격자 — 칸은 보기 전용. 클릭·호버 반응 없음 */
+#board{flex:1;min-height:0;overflow:hidden;padding:18px 32px 12px;
+  display:grid;grid-template-columns:96px repeat(5,minmax(0,1fr));
+  grid-template-rows:auto repeat(10,minmax(min-content,1fr));gap:8px 10px;pointer-events:none}
+.hd{display:flex;align-items:baseline;gap:10px;padding:0 6px 4px;font-size:24px;font-weight:800;letter-spacing:-.02em;white-space:nowrap;overflow:hidden}
+.hd .k{color:var(--ink3);font-weight:700}
+.hd .c{margin-left:auto;font-size:24px;font-weight:700;color:var(--ink3)}
+.hd .c b{color:var(--yellow)}
+.tn{display:grid;place-items:center;background:var(--soft);border-radius:14px;font-size:30px;font-weight:800;letter-spacing:-.03em}
+.cell{display:flex;align-items:center;gap:12px;background:var(--line2);border-radius:14px;padding:8px 12px;min-width:0;overflow:hidden;transition:background .4s}
+.cell.empty{justify-content:center;color:var(--ink3);font-size:24px;font-weight:600}
+.cell.done{background:var(--soft)}
+.cell .th{flex:none;width:64px;height:64px;border-radius:10px;object-fit:cover;background:var(--panel2)}
+.cell .ck{flex:none;width:34px;height:34px;border-radius:50%;background:var(--yellow);color:var(--fillInk);display:grid;place-items:center;font-size:20px;font-weight:900}
+.cell .sum{font-size:24px;font-weight:700;line-height:1.3;letter-spacing:-.02em;
+  display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical;overflow:hidden;word-break:keep-all;overflow-wrap:anywhere}
+/* 방금 들어온 칸 */
+.cell.fresh{background:rgba(253,206,15,.2);box-shadow:inset 0 0 0 3px var(--yellow)}
+
+.foot{display:flex;align-items:center;justify-content:flex-end;gap:16px;padding:6px 32px 16px;flex:none}
+.foot .note{font-size:24px;color:var(--ink3);margin-right:auto}
+.fsbtn{font-size:24px;font-weight:700;padding:12px 22px;border-radius:16px;background:rgba(253,242,220,.14);color:var(--fill)}
+</style>
+</head>
+<body>
+
+<div class="bar">
+  <span class="dot" id="dot"></span>
+  <div class="t">2026 호남권 SW 창업아이디어 경진대회</div>
+  <div class="h">진행 현황</div>
+  <div class="sp"></div>
+  <div class="pill" id="total"></div>
+</div>
+
+<div id="board" aria-live="polite"></div>
+
+<div class="foot">
+  <span class="note">라인교육연구소 &nbsp;·&nbsp; 의미있고 재미있게</span>
+  <button id="fs" class="fsbtn">⛶ 전체화면</button>
+</div>
+
+<script type="module">
+import { db, ref, onValue, onConnection } from './js/db.js';
+import { TEAM_NOS, STAGES } from './js/data.js';
+import { setupFullscreen, toggleFullscreen, refit } from './js/stage.js';
+
+const $ = s => document.querySelector(s);
+const esc = s => String(s ?? '').replace(/[&<>"']/g, c => ({ '&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;' }[c]));
+
+let pub = null;            // /public — 현황판은 이것만 구독한다 (사양서 §5)
+const seen = new Map();    // "팀/단계" → 마지막으로 본 submittedAt
+const freshUntil = new Map();
+const FRESH_MS = 15000;
+let first = true;
+
+function render() {
+  if (!pub) return;
+  const now = Date.now();
+  const counts = STAGES.map(s => TEAM_NOS.filter(n => pub[n]?.[s.id]?.submittedAt).length);
+  const total = counts.reduce((a, b) => a + b, 0);
+  $('#total').innerHTML = `제출 <b>${total}</b> / ${TEAM_NOS.length * STAGES.length}`;
+
+  let html = '<div></div>' + STAGES.map((s, i) =>
+    `<div class="hd"><span class="k">${i + 1}</span>${esc(s.name)}<span class="c"><b>${counts[i]}</b>/${TEAM_NOS.length}</span></div>`).join('');
+
+  for (const n of TEAM_NOS) {
+    html += `<div class="tn">${n}조</div>`;
+    for (const s of STAGES) {
+      const v = pub[n]?.[s.id];
+      const key = `${n}/${s.id}`;
+      if (v?.submittedAt && seen.get(key) !== v.submittedAt) {
+        // 처음 불러온 것은 "방금 들어온 것"으로 치지 않는다
+        if (!first) freshUntil.set(key, now + FRESH_MS);
+        seen.set(key, v.submittedAt);
+      }
+      if (!v?.submittedAt) { html += `<div class="cell empty">—</div>`; continue; }
+      const fresh = (freshUntil.get(key) || 0) > now;
+      const lead = v.thumb ? `<img class="th" src="${esc(v.thumb)}" alt="">` : `<span class="ck">✓</span>`;
+      html += `<div class="cell done ${fresh ? 'fresh' : ''}">${lead}<span class="sum">${esc(v.summary)}</span></div>`;
+    }
+  }
+  $('#board').innerHTML = html;
+  first = false;
+  refit();
+}
+
+onConnection(ok => $('#dot').classList.toggle('live', ok));
+onValue(ref(db, 'public'), s => { pub = s.val() || {}; render(); },
+  e => { $('#board').innerHTML = `<div class="hd">현황을 불러오지 못했어요: ${esc(e.message)}</div>`; });
+
+// 방금 들어온 칸 강조를 시간이 지나면 끈다
+setInterval(() => { if ([...freshUntil.values()].some(t => t > Date.now() - 2000)) render(); }, 2000);
+
+setupFullscreen($('#fs'), () => $('#board'));
+document.addEventListener('keydown', e => { if (e.key === 'f' || e.key === 'F') toggleFullscreen(); });
+
+// 무인 운영 — 화면 꺼짐 방지 (지원하는 브라우저에서만, 탭이 다시 보이면 다시 요청)
+async function keepAwake() {
+  try { if (document.visibilityState === 'visible') await navigator.wakeLock?.request('screen'); } catch {}
+}
+keepAwake();
+document.addEventListener('visibilitychange', keepAwake);
+</script>
+</body>
+</html>
