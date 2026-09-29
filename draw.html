@@ -8,7 +8,10 @@
 <link rel="stylesheet" href="https://cdn.jsdelivr.net/gh/orioncactus/pretendard@v1.3.9/dist/web/variable/pretendardvariable-dynamic-subset.min.css">
 <link rel="stylesheet" href="css/tokens.css">
 <style>
-/* 발표 순서 뽑기 — 구슬 레이스. 10개 조 공이 핀 사이로 굴러 내려가고, 결승선에 먼저 닿은 순서가 발표 순서 */
+/* 발표 순서 뽑기 — 핀볼 레이스 (lazygyu 마블 룰렛 참고).
+   가운데 발사관에 10개 조 공이 모여 있다가 START(3·2·1) 순간 동시에 위로 솟구치고,
+   지붕에서 좌우로 갈라져 회전 막대·범퍼·핀 사이를 퉁퉁 튕기며 내려온다.
+   아래 결승선에 먼저 닿은 순서가 발표 순서. */
 body{display:flex;flex-direction:column;height:100dvh;overflow:hidden}
 .bar{display:flex;align-items:center;gap:16px;padding:clamp(8px,1.5vh,16px) 28px;border-bottom:1px solid var(--line);flex:none}
 .bar .t{font-size:clamp(16px,2vh,22px);font-weight:700;color:var(--ink2)}
@@ -18,8 +21,14 @@ body{display:flex;flex-direction:column;height:100dvh;overflow:hidden}
 .bar .fsbtn{background:rgba(253,242,220,.14);color:var(--fill)}
 
 .body{flex:1;min-height:0;display:flex;gap:24px;padding:18px 28px 22px}
-.stagewrap{flex:1;min-width:0;display:flex;align-items:center;justify-content:center}
-canvas{display:block;border-radius:24px;background:var(--soft)}
+.stagewrap{flex:1;min-width:0;display:flex;align-items:center;justify-content:center;position:relative}
+canvas{display:block;border-radius:24px}
+/* 3·2·1 */
+.count{position:absolute;inset:0;display:grid;place-items:center;pointer-events:none;
+  font-size:clamp(120px,22vh,260px);font-weight:900;color:var(--yellow);letter-spacing:-.05em;
+  text-shadow:0 0 60px rgba(253,206,15,.45);opacity:0}
+.count.show{animation:count .9s ease-out}
+@keyframes count{0%{opacity:0;transform:scale(1.6)}25%{opacity:1;transform:scale(1)}100%{opacity:0;transform:scale(.85)}}
 
 /* 오른쪽 — 발표 순서 */
 .side{width:clamp(300px,24vw,420px);flex:none;display:flex;flex-direction:column;gap:14px;min-height:0}
@@ -28,7 +37,7 @@ canvas{display:block;border-radius:24px;background:var(--soft)}
 .order li{display:flex;align-items:center;gap:14px;background:var(--soft);border-radius:14px;padding:0 18px;min-height:0;transition:background .3s}
 .order .no{width:clamp(56px,4.2vw,76px);font-size:clamp(18px,2.4vh,26px);font-weight:700;color:var(--ink3)}
 .order .tm{font-size:clamp(24px,3.6vh,40px);font-weight:800;letter-spacing:-.03em;color:var(--ink3)}
-.order .dot{width:clamp(22px,2.8vh,30px);height:clamp(22px,2.8vh,30px);border-radius:50%;flex:none;margin-left:auto}
+.order .dot{width:clamp(22px,2.8vh,30px);height:clamp(22px,2.8vh,30px);border-radius:50%;flex:none;margin-left:auto;box-shadow:inset -3px -4px 0 rgba(0,0,0,.18)}
 .order li.on{background:var(--panel2)}
 .order li.on .tm{color:var(--ink)}
 .order li.first{background:var(--fill)}
@@ -54,7 +63,7 @@ canvas{display:block;border-radius:24px;background:var(--soft)}
 </div>
 
 <div class="body">
-  <div class="stagewrap" id="wrap"><canvas id="cv"></canvas></div>
+  <div class="stagewrap" id="wrap"><canvas id="cv"></canvas><div class="count" id="count"></div></div>
   <aside class="side">
     <h2>발표 순서</h2>
     <ol class="order" id="order"></ol>
@@ -74,148 +83,267 @@ const { Engine, Bodies, Body, Composite, Events } = Matter;
 const $ = s => document.querySelector(s);
 
 const TEAMS = 10;
-// 조별 공 색 — 어두운 판 위에서 서로 잘 구분되는 10색
 const COLORS = ['#fdce0f', '#f3a283', '#8b9dc7', '#97bb7b', '#f7c2cc', '#e8c273', '#9ec084', '#a7b5d6', '#f6b9a1', '#fdf2dc'];
 
-// ── 판 크기 (논리 좌표) ─────────────────────
-const W = 900, H = 1100;
-const BALL_R = 22, PEG_R = 7;
-const FINISH_Y = H - 90;
+// ── 판 (논리 좌표) ───────────────────────────
+const W = 1000, H = 1200;
+const BALL_R = 22, PEG_R = 6, BUMPER_R = 30;   // 공을 키워 번호가 크게 보이게
+const COL_L = 385, COL_R = 615;   // 가운데 발사관 — 공 5개가 한 줄로 들어가는 폭
+const COL_TOP = 330;              // 발사관 벽 윗끝
+const FINISH_Y = H - 70;
+const GRAVITY = 0.85;
+const KICK = 8;                   // 범퍼 튕김 세기
+const VMAX = 28;                  // 공 속도 상한 (한 걸음당 px) — 공 반지름 + 벽 두께 절반보다 작게 (22 + 12 = 34)
 
-// 보안용 난수 (0 이상 1 미만)
-const rand = () => crypto.getRandomValues(new Uint32Array(1))[0] / 2 ** 32;
+const rand = () => crypto.getRandomValues(new Uint32Array(1))[0] / 2 ** 32;   // 보안용 난수
 const shuffle = a => { for (let i = a.length - 1; i > 0; i--) { const j = Math.floor(rand() * (i + 1)); [a[i], a[j]] = [a[j], a[i]]; } return a; };
+const STEP_A = () => GRAVITY * 0.001 * (1000 / 60) ** 2;   // 한 걸음당 중력 가속
 
-let engine, balls = [], gate = null, finished = [], running = false, stuck = new Map();
+let engine, balls = [], bumpers = [], spinners = [], rings = [], finished = [], running = false, stuck = new Map(), lid = null, launchedAt = 0;
 
 function build() {
-  engine = Engine.create({ gravity: { x: 0, y: 1 } });
+  // 충돌 계산을 촘촘히 — 빠른 공이 얇은 벽을 뚫고 나가지 않게
+  engine = Engine.create({ gravity: { x: 0, y: GRAVITY }, positionIterations: 12, velocityIterations: 10 });
   const world = engine.world;
-  const wall = (x, y, w, h, angle = 0) => Bodies.rectangle(x, y, w, h, { isStatic: true, angle, label: 'wall', restitution: 0.4 });
-  // 양옆 벽
-  Composite.add(world, [wall(-10, H / 2, 20, H * 2), wall(W + 10, H / 2, 20, H * 2)]);
-  // 핀 — 엇갈린 줄
-  // 가운데를 기준으로 좌우 대칭, 벽과 바깥 핀 사이는 공 지름보다 넓게 — 좁으면 공이 끼어 멈춘다
-  const rows = 12, top = 230, gapY = 58, gapX = 72, edge = BALL_R * 2 + PEG_R + 10;
-  for (let r = 0; r < rows; r++) {
-    const off = r % 2 ? gapX / 2 : 0;
-    for (let k = -10; k <= 10; k++) {
-      const x = W / 2 + off + k * gapX;
-      if (x < edge || x > W - edge) continue;
-      Composite.add(world, Bodies.circle(x, top + r * gapY, PEG_R, { isStatic: true, label: 'peg', restitution: 0.55 }));
-    }
-  }
-  // 중간 튕김판 — 한쪽으로 몰리지 않게 좌우로 섞는다
-  Composite.add(world, [
-    wall(180, 960, 240, 14, 0.35), wall(W - 180, 960, 240, 14, -0.35),
-  ]);
-  // 대기 칸 — 공이 한 줄로 서 있다가 게이트가 열리면 출발
-  gate = wall(W / 2, 150, W, 16);
-  Composite.add(world, gate);
+  const wall = (x, y, w, h, angle = 0, extra = {}) => Bodies.rectangle(x, y, w, h, { isStatic: true, angle, label: 'wall', restitution: 0.45, friction: 0, chamfer: { radius: Math.min(w, h) / 2 - 0.5 }, ...extra });
+  const seg = (x0, y0, x1, y1, t = 12, extra) => wall((x0 + x1) / 2, (y0 + y1) / 2, Math.hypot(x1 - x0, y1 - y0) + t, t, Math.atan2(y1 - y0, x1 - x0), extra);
 
-  // 공 — 출발 자리를 섞는다
+  // 바깥 벽·천장·바닥 — 두껍게 (얇으면 빠른 공이 뚫고 나간다)
+  Composite.add(world, [
+    wall(-100, H / 2, 200, H * 3), wall(W + 100, H / 2, 200, H * 3),
+    wall(W / 2, -100, W * 3, 200), wall(W / 2, H + 100, W * 3, 200),
+  ]);
+  // 가운데 발사관
+  Composite.add(world, [seg(COL_L, COL_TOP, COL_L, H, 24), seg(COL_R, COL_TOP, COL_R, H, 24)]);
+  // 지붕 — 솟구친 공을 좌우로 가른다
+  Composite.add(world, [seg(330, 250, W / 2, 140, 30), seg(W / 2, 140, 670, 250, 30)]);
+  // 윗부분 좌우 곡선 가이드 — 바깥으로 너무 빨리 튀지 않게
+  Composite.add(world, [seg(60, 60, 180, 140), seg(W - 60, 60, W - 180, 140)]);
+
+  // 범퍼
+  bumpers = [[120, 330], [290, 420], [150, 560], [310, 700],
+             [W - 120, 330], [W - 290, 420], [W - 150, 560], [W - 310, 700]]
+    .map(([x, y]) => Bodies.circle(x, y, BUMPER_R, { isStatic: true, label: 'bumper', restitution: 0.9 }));
+  Composite.add(world, bumpers);
+
+  // 회전 막대 (풍차) — 좌우 대칭 위치, 서로 반대 방향
+  spinners = [[200, 460, 0.035], [W - 200, 460, -0.035], [240, 850, -0.03], [W - 240, 850, 0.03]]
+    .map(([x, y, w]) => { const s = Bodies.rectangle(x, y, 170, 14, { isStatic: true, label: 'spinner', chamfer: { radius: 6.5 }, restitution: 0.4 }); s.spin = w; return s; });
+  Composite.add(world, spinners);
+
+  // 핀 — 좌우 필드 아래쪽
+  const pinsIn = (x0, x1) => {
+    // 간격은 공 크기에 맞춰 넉넉히 — 좁으면 공이 위아래 핀 셋 사이에 끼어 멈춘다
+    for (let r = 0; r < 3; r++) for (let x = x0 + (r % 2 ? 42 : 0); x <= x1; x += 84)
+      Composite.add(world, Bodies.circle(x, 955 + r * 62, PEG_R, { isStatic: true, label: 'peg', restitution: 0.5 }));
+  };
+  pinsIn(56, COL_L - 50); pinsIn(COL_R + 50, W - 56);
+
+  // 공 — 발사관 바닥에 두 줄로. 자리는 섞는다
   balls = [];
-  const slots = shuffle([...Array(TEAMS).keys()]);
-  const spacing = (W - 80) / TEAMS;
-  slots.forEach((slot, i) => {
-    const team = i + 1;
-    const x = 40 + spacing * (slot + 0.5) + (rand() - 0.5) * 10;
-    const b = Bodies.circle(x, 110, BALL_R, { restitution: 0.5, friction: 0.002, frictionAir: 0.008, density: 0.002, label: 'ball' });
-    b.team = team;
-    b.color = COLORS[i];
+  const spots = shuffle([...Array(TEAMS).keys()]);
+  spots.forEach((spot, ti) => {
+    const col = spot % 5, row = Math.floor(spot / 5);
+    const b = Bodies.circle(COL_L + 27 + col * 44, H - BALL_R - 2 - row * (BALL_R * 2 + 1), BALL_R,
+      { restitution: 0.55, friction: 0.001, frictionAir: 0.0012, density: 0.002, label: 'ball' });   // 공기 저항이 크면 지붕까지 못 올라간다
+    b.team = ti + 1; b.color = COLORS[ti]; b.trail = [];
     balls.push(b);
   });
   Composite.add(world, balls);
-  finished = []; stuck = new Map(); running = false;
+
+  Events.on(engine, 'collisionStart', e => {
+    for (const { bodyA, bodyB } of e.pairs) {
+      const bump = bodyA.label === 'bumper' ? bodyA : bodyB.label === 'bumper' ? bodyB : null;
+      const ball = bodyA.label === 'ball' ? bodyA : bodyB.label === 'ball' ? bodyB : null;
+      if (!bump || !ball) continue;
+      const dx = ball.position.x - bump.position.x, dy = ball.position.y - bump.position.y, d = Math.hypot(dx, dy) || 1;
+      Body.setVelocity(ball, { x: dx / d * KICK + (rand() - 0.5), y: dy / d * KICK });
+      bump.flash = 12;
+      rings.push({ x: bump.position.x, y: bump.position.y, r: BUMPER_R, a: 1 });
+    }
+  });
+
+  finished = []; stuck = new Map(); running = false; rings = []; lid = null; launchedAt = 0;
   renderOrder();
 }
 
-function start() {
+// 발사관 안의 공을 위로 쏜다 — 곧게, 최고 속도로.
+// 공마다 세기나 방향을 다르게 주면 좁은 발사관 안에서 서로·벽과 부딪혀 힘을 잃고 도로 떨어진다(실측).
+// 10개가 한 덩어리로 같이 솟구치고, 순서의 무작위성은 섞인 출발 자리와 지붕·범퍼·회전 막대에서 나온다.
+function kickUp(b) { Body.setVelocity(b, { x: 0, y: -VMAX }); }
+
+async function start() {
   if (running || finished.length) return;
   running = true;
-  Composite.remove(engine.world, gate);
-  // 살짝씩 다르게 출발
-  for (const b of balls) Body.setVelocity(b, { x: (rand() - 0.5) * 3, y: rand() * 1.5 });
   $('#start').disabled = true;
+  const c = $('#count');
+  for (const t of ['3', '2', '1']) {
+    c.textContent = t; c.classList.remove('show'); void c.offsetWidth; c.classList.add('show');
+    await new Promise(r => setTimeout(r, 800));
+  }
+  c.textContent = '';
+  for (const b of balls) kickUp(b);   // 동시에!
+  launchedAt = performance.now();
 }
 
 // ── 한 프레임 ───────────────────────────────
 function step() {
+  for (const s of spinners) Body.setAngle(s, s.angle + s.spin);
   Engine.update(engine, 1000 / 60);
+  const inCol = b => b.position.x > COL_L && b.position.x < COL_R && b.position.y > COL_TOP;
   for (const b of balls) {
     if (b.done) continue;
-    // 결승선 통과 → 순서 기록, 판에서 뺀다
-    if (b.position.y > FINISH_Y) {
-      b.done = true;
-      finished.push(b);
+    // 속도 상한 — 이보다 빠르면 벽을 뚫을 수 있다
+    const sp = Math.hypot(b.velocity.x, b.velocity.y);
+    if (sp > VMAX) Body.setVelocity(b, { x: b.velocity.x / sp * VMAX, y: b.velocity.y / sp * VMAX });
+    // 만에 하나 판 밖으로 나가면 발사관에 되돌려 다시 쏜다
+    if (b.position.x < 0 || b.position.x > W || b.position.y < 0 || b.position.y > H) {
+      Body.setPosition(b, { x: (COL_L + COL_R) / 2 + (rand() - 0.5) * 80, y: H - 60 });
+      Body.setVelocity(b, { x: 0, y: 0 });
+      b.trail = [];
+    }
+    b.trail.push({ x: b.position.x, y: b.position.y }); if (b.trail.length > 8) b.trail.shift();
+    if (!running) continue;
+    // 좌우 필드 아래 결승선 통과 → 순서 기록
+    if (b.position.y > FINISH_Y && !inCol(b)) {
+      b.done = true; finished.push(b);
       Composite.remove(engine.world, b);
       renderOrder(true);
       continue;
     }
-    // 멈춰 버린 공은 살짝 흔들어 준다 (핀 위에 얹히는 경우)
-    if (running) {
-      const slow = Math.hypot(b.velocity.x, b.velocity.y) < 0.15;
-      const n = slow ? (stuck.get(b) || 0) + 1 : 0;
-      stuck.set(b, n);
-      // 가운데 쪽으로 튕겨 준다 — 벽 쪽으로 밀면 다시 끼인다
-      if (n > 45) { Body.setVelocity(b, { x: Math.sign(W / 2 - b.position.x || 1) * (1.5 + rand() * 2.5), y: -2 }); stuck.set(b, 0); }
+    const slow = Math.hypot(b.velocity.x, b.velocity.y) < 0.3;
+    // 발사관으로 도로 떨어진 공은 다시 쏜다 — 한 번에 하나씩, 위가 비어 있을 때만 (핀볼 발사대처럼)
+    if (inCol(b) && slow && b.position.y > H - 120 && $('#count').textContent === '') {
+      const blocked = balls.some(o => o !== b && !o.done && inCol(o) && o.position.y < b.position.y && Math.abs(o.position.x - b.position.x) < BALL_R * 2.2);
+      const busy = balls.some(o => o !== b && !o.done && inCol(o) && o.velocity.y < -3);
+      // 정가운데에서 쏘면 지붕 꼭짓점에 정통으로 맞고 발사관으로 도로 떨어진다 — 좌우로 비켜서
+      // 뚜껑이 닫힌 뒤 발사관 안에 공이 있으면(드문 경우) 뚜껑을 열고 쏜 다음 다시 닫는다
+      if (!blocked && !busy && lid) { Composite.remove(engine.world, lid); lid = null; launchedAt = performance.now(); }
+      if (!blocked && !busy) {
+        const off = (rand() < 0.5 ? -1 : 1) * (30 + rand() * 40);
+        Body.setPosition(b, { x: (COL_L + COL_R) / 2 + off, y: b.position.y });
+        kickUp(b);
+      }
+      continue;
+    }
+    // 멈춘 공은 살짝 튕겨 준다 (바깥 벽 → 안쪽으로)
+    const n = slow ? (stuck.get(b) || 0) + 1 : 0;
+    stuck.set(b, n);
+    if (n > 45) {
+      const side = b.position.x < W / 2 ? 1 : -1;
+      Body.setVelocity(b, { x: side * (b.position.x < 120 || b.position.x > W - 120 ? 3 : -2) * (0.8 + rand()), y: -4 });
+      stuck.set(b, 0);
     }
   }
-  if (running && finished.length === TEAMS) { running = false; }
+  for (const bp of bumpers) if (bp.flash) bp.flash--;
+  for (const r of rings) { r.r += 2.2; r.a -= 0.05; }
+  rings = rings.filter(r => r.a > 0);
+  // 모든 공이 발사관을 빠져나가면 뚜껑을 닫는다 — 경기 중 발사관으로 되돌아가 다시 쏘느라 길어지지 않게.
+  // 뚜껑은 ^ 모양이라 위에 떨어진 공은 좌우로 굴러 내려간다
+  // 발사관 위(지붕 아래)까지 비었을 때만 — 올라가는 중인 공을 가둬 버리면 안 된다
+  const nearTube = b => b.position.x > COL_L - BALL_R && b.position.x < COL_R + BALL_R && b.position.y > 120;
+  if (running && !lid && launchedAt && performance.now() - launchedAt > 1200 && !balls.some(b => !b.done && nearTube(b))) {
+    const t = 14, cx = (COL_L + COL_R) / 2, y0 = COL_TOP - 10, y1 = COL_TOP - 50;
+    const mk = (x0, ya, x1, yb) => Bodies.rectangle((x0 + x1) / 2, (ya + yb) / 2, Math.hypot(x1 - x0, yb - ya) + t, t,
+      { isStatic: true, angle: Math.atan2(yb - ya, x1 - x0), label: 'lid', restitution: 0.4, friction: 0, chamfer: { radius: 6.5 } });
+    lid = [mk(COL_L - 8, y0, cx, y1), mk(cx, y1, COL_R + 8, y0)];
+    Composite.add(engine.world, lid);
+  }
+  if (running && finished.length === TEAMS) running = false;
   draw();
   requestAnimationFrame(step);
 }
 
 // ── 그리기 ──────────────────────────────────
 const cv = $('#cv'), ctx = cv.getContext('2d');
-let scale = 1;
 function fit() {
   const wrap = $('#wrap');
   const k = Math.min(wrap.clientWidth / W, wrap.clientHeight / H);
-  scale = k;
   const dpr = window.devicePixelRatio || 1;
   cv.style.width = `${W * k}px`; cv.style.height = `${H * k}px`;
   cv.width = Math.round(W * k * dpr); cv.height = Math.round(H * k * dpr);
   ctx.setTransform(k * dpr, 0, 0, k * dpr, 0, 0);
 }
 
+const FONT = 'Pretendard Variable, Pretendard, sans-serif';
+const path = b => { ctx.beginPath(); b.vertices.forEach((v, i) => i ? ctx.lineTo(v.x, v.y) : ctx.moveTo(v.x, v.y)); ctx.closePath(); };
+
 function draw() {
-  ctx.clearRect(0, 0, W, H);
-  // 결승선
+  // 판 — 은은한 세로 그라데이션 + 점 격자
+  const g = ctx.createLinearGradient(0, 0, 0, H);
+  g.addColorStop(0, '#34342f'); g.addColorStop(1, '#262624');
+  ctx.fillStyle = g; ctx.fillRect(0, 0, W, H);
+  ctx.fillStyle = 'rgba(253,242,220,.035)';
+  for (let y = 20; y < H; y += 40) for (let x = 20; x < W; x += 40) ctx.fillRect(x, y, 2, 2);
+  // 발사관 안쪽
+  ctx.fillStyle = 'rgba(253,206,15,.06)'; ctx.fillRect(COL_L, COL_TOP, COL_R - COL_L, H - COL_TOP);
+
+  // 결승선 (좌우)
   ctx.save();
-  ctx.strokeStyle = '#fdce0f'; ctx.lineWidth = 4; ctx.setLineDash([18, 12]);
-  ctx.beginPath(); ctx.moveTo(0, FINISH_Y); ctx.lineTo(W, FINISH_Y); ctx.stroke();
+  ctx.strokeStyle = '#fdce0f'; ctx.lineWidth = 4; ctx.setLineDash([16, 10]);
+  ctx.beginPath(); ctx.moveTo(0, FINISH_Y); ctx.lineTo(COL_L, FINISH_Y); ctx.moveTo(COL_R, FINISH_Y); ctx.lineTo(W, FINISH_Y); ctx.stroke();
   ctx.restore();
-  ctx.fillStyle = '#fdce0f'; ctx.font = '800 26px Pretendard Variable, Pretendard, sans-serif'; ctx.textAlign = 'center';
-  ctx.fillText('FINISH', W / 2, FINISH_Y + 44);
+  ctx.fillStyle = 'rgba(253,206,15,.9)'; ctx.font = `800 24px ${FONT}`; ctx.textAlign = 'center'; ctx.textBaseline = 'alphabetic';
+  ctx.fillText('FINISH', COL_L / 2, FINISH_Y + 42); ctx.fillText('FINISH', (COL_R + W) / 2, FINISH_Y + 42);
 
   for (const b of Composite.allBodies(engine.world)) {
     if (b.label === 'peg') {
-      ctx.fillStyle = 'rgba(253,242,220,.55)';
+      ctx.fillStyle = 'rgba(253,242,220,.5)';
       ctx.beginPath(); ctx.arc(b.position.x, b.position.y, PEG_R, 0, Math.PI * 2); ctx.fill();
-    } else if (b.label === 'wall' && b !== gate) {
-      ctx.fillStyle = '#454541';
-      ctx.beginPath(); b.vertices.forEach((v, i) => i ? ctx.lineTo(v.x, v.y) : ctx.moveTo(v.x, v.y)); ctx.closePath(); ctx.fill();
-    } else if (b === gate) {
-      ctx.fillStyle = 'rgba(253,206,15,.5)';
-      ctx.fillRect(0, b.position.y - 4, W, 8);
+    } else if (b.label === 'lid') {
+      ctx.fillStyle = '#fdce0f'; path(b); ctx.fill();
+    } else if (b.label === 'wall') {
+      ctx.fillStyle = '#56564f'; path(b); ctx.fill();
+    } else if (b.label === 'spinner') {
+      ctx.fillStyle = '#fdf2dc'; path(b); ctx.fill();
+      ctx.fillStyle = '#fdce0f'; ctx.beginPath(); ctx.arc(b.position.x, b.position.y, 7, 0, Math.PI * 2); ctx.fill();
+    } else if (b.label === 'bumper') {
+      const f = b.flash || 0;
+      ctx.fillStyle = f ? `rgba(253,242,220,${0.35 + f * 0.05})` : 'rgba(253,206,15,.14)';
+      ctx.beginPath(); ctx.arc(b.position.x, b.position.y, BUMPER_R + (f ? 3 : 0), 0, Math.PI * 2); ctx.fill();
+      ctx.strokeStyle = '#fdce0f'; ctx.lineWidth = f ? 6 : 4; ctx.stroke();
+      ctx.fillStyle = '#fdce0f'; ctx.beginPath(); ctx.arc(b.position.x, b.position.y, 8, 0, Math.PI * 2); ctx.fill();
     }
   }
-  for (const b of balls) {
-    if (b.done) continue;
-    ctx.fillStyle = b.color;
-    ctx.beginPath(); ctx.arc(b.position.x, b.position.y, BALL_R, 0, Math.PI * 2); ctx.fill();
-    ctx.fillStyle = '#2c2c2a';
-    ctx.font = '800 22px Pretendard Variable, Pretendard, sans-serif';
-    ctx.textAlign = 'center'; ctx.textBaseline = 'middle';
-    ctx.fillText(String(b.team), b.position.x, b.position.y + 1);
+  // 범퍼 파동
+  for (const r of rings) {
+    ctx.strokeStyle = `rgba(253,206,15,${r.a})`; ctx.lineWidth = 3;
+    ctx.beginPath(); ctx.arc(r.x, r.y, r.r, 0, Math.PI * 2); ctx.stroke();
   }
+
+  // 선두 공 (결승 안 한 공 중 가장 아래)
+  const alive = balls.filter(b => !b.done);
+  const leader = running && finished.length < TEAMS ? alive.filter(b => b.position.y < H - 10 && !(b.position.x > COL_L && b.position.x < COL_R && b.position.y > COL_TOP)).sort((a, b) => b.position.y - a.position.y)[0] : null;
+
+  for (const b of alive) {
+    // 꼬리 빛
+    b.trail.forEach((p, i) => {
+      ctx.fillStyle = b.color; ctx.globalAlpha = (i + 1) / b.trail.length * 0.22;
+      ctx.beginPath(); ctx.arc(p.x, p.y, BALL_R * (0.4 + 0.6 * (i + 1) / b.trail.length), 0, Math.PI * 2); ctx.fill();
+    });
+    ctx.globalAlpha = 1;
+    if (b === leader) {
+      ctx.strokeStyle = 'rgba(253,242,220,.9)'; ctx.lineWidth = 3;
+      ctx.beginPath(); ctx.arc(b.position.x, b.position.y, BALL_R + 7, 0, Math.PI * 2); ctx.stroke();
+    }
+    // 공 — 광택 있는 구슬
+    const rg = ctx.createRadialGradient(b.position.x - 8, b.position.y - 9, 2, b.position.x, b.position.y, BALL_R);
+    rg.addColorStop(0, '#ffffff'); rg.addColorStop(0.22, b.color); rg.addColorStop(1, shade(b.color));
+    ctx.fillStyle = rg;
+    ctx.beginPath(); ctx.arc(b.position.x, b.position.y, BALL_R, 0, Math.PI * 2); ctx.fill();
+    ctx.fillStyle = '#2c2c2a'; ctx.font = `900 ${b.team >= 10 ? 23 : 27}px ${FONT}`; ctx.textAlign = 'center'; ctx.textBaseline = 'middle';
+    ctx.fillText(String(b.team), b.position.x, b.position.y + 2);
+  }
+}
+// 공 가장자리 음영
+function shade(hex) {
+  const n = parseInt(hex.slice(1), 16), f = 0.62;
+  return `rgb(${Math.round((n >> 16) * f)},${Math.round(((n >> 8) & 255) * f)},${Math.round((n & 255) * f)})`;
 }
 
 // ── 발표 순서 목록 ───────────────────────────
 function renderOrder(popLast = false) {
-  const ol = $('#order');
-  ol.innerHTML = Array.from({ length: TEAMS }, (_, i) => {
+  $('#order').innerHTML = Array.from({ length: TEAMS }, (_, i) => {
     const b = finished[i];
     const cls = [b ? 'on' : '', b && i === 0 ? 'first' : '', popLast && b && i === finished.length - 1 ? 'pop' : ''].join(' ');
     return `<li class="${cls}"><span class="no">${i + 1}번째</span><span class="tm">${b ? `${b.team}조` : '—'}</span>${b ? `<span class="dot" style="background:${b.color}"></span>` : ''}</li>`;
@@ -233,7 +361,6 @@ setupFullscreen($('#fs'), fit);
 window.addEventListener('resize', fit);
 
 build(); fit(); requestAnimationFrame(step);
-document.fonts?.ready.then(() => draw());
 </script>
 </body>
 </html>
