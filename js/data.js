@@ -42,8 +42,8 @@ export const STAGES = [
     { key:'feature1', label:'핵심 기능 1', long:true },
     { key:'feature2', label:'핵심 기능 2', long:true },
     { key:'feature3', label:'핵심 기능 3', long:true } ] },
-  // photoLabel: 사진 칸 이름 (없으면 '사진'). 사업화 전략은 비즈니스 모델 캔버스를 찍어 올린다
-  { id:'s4', name:'사업화 전략', photo:true, photoLabel:'사진(비즈니스모델)', summary:'revenue', fields:[
+  // photoLabel: 이미지 칸 이름 (없으면 '사진'). 사업화 전략은 수익창출모델(비즈니스 모델 캔버스) 이미지를 올린다
+  { id:'s4', name:'사업화 전략', photo:true, photoLabel:'수익창출모델 이미지', summary:'revenue', fields:[
     { key:'revenue',  label:'수익 모델', hint:'누가, 무엇에, 얼마를 내나요?', long:true },
     { key:'customer', label:'고객 확보 방법', long:true } ] },
   // 발표자료는 PDF만 올린다 (핵심 메시지 칸은 행사 당일 뺐다)
