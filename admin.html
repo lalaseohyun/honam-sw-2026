@@ -18,6 +18,7 @@ body.authed .login-wrap{display:none}
 .bar .sp{flex:1}
 .dot{width:9px;height:9px;border-radius:50%;background:var(--no);flex:none}
 .dot.live{background:var(--yellow)}
+.bar .fsbtn{background:rgba(253,242,220,.14);color:var(--fill)}
 .bar button{font-size:13px;font-weight:700;color:var(--ink2);padding:7px 14px;border-radius:999px;background:var(--soft)}
 
 #app{max-width:1280px;margin:0 auto;padding:22px 24px 48px;display:flex;flex-direction:column;gap:18px}
@@ -122,6 +123,7 @@ table.grid{width:100%;border-collapse:separate;border-spacing:5px;min-width:980p
   <a class="auth-only" href="board.html" target="_blank" rel="noopener"><button>현황판 ↗</button></a>
   <a class="auth-only" href="host.html" target="_blank" rel="noopener"><button>퀴즈 진행 ↗</button></a>
   <button class="auth-only" id="logout">로그아웃</button>
+  <button class="auth-only fsbtn" id="fs">⛶ 전체화면</button>
 </div>
 
 <div class="login-wrap">

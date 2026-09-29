@@ -9,6 +9,7 @@ import { db, ref, get, update, remove, onValue, onConnection, withTimeout, loadA
 import { TEAMS, TEAM_NOS, STAGES } from './data.js';
 import { toCsv, progressRows, quizRows, countSubmissions, fmtTime } from './export.js';
 import { mountProgress } from './progress-view.js';
+import { setupFullscreen } from './stage.js';
 
 const $ = s => document.querySelector(s);
 const esc = s => String(s ?? '').replace(/[&<>"']/g, c => ({ '&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;' }[c]));
@@ -189,6 +190,7 @@ async function exportQuiz() {
 }
 
 function bind() {
+  setupFullscreen($('#fs'));   // 확대 없이 화면만 꽉 채운다 (현황판과 같은 방식)
   $('#app').addEventListener('click', async e => {
     const t = e.target;
     const en = t.closest('[data-entry]');
