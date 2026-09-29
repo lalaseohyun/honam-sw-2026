@@ -1,0 +1,239 @@
+<!doctype html>
+<html lang="ko">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<meta name="theme-color" content="#2c2c2a">
+<title>발표 순서 뽑기 · 2026 호남권 SW 창업아이디어 경진대회</title>
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/gh/orioncactus/pretendard@v1.3.9/dist/web/variable/pretendardvariable-dynamic-subset.min.css">
+<link rel="stylesheet" href="css/tokens.css">
+<style>
+/* 발표 순서 뽑기 — 구슬 레이스. 10개 조 공이 핀 사이로 굴러 내려가고, 결승선에 먼저 닿은 순서가 발표 순서 */
+body{display:flex;flex-direction:column;height:100dvh;overflow:hidden}
+.bar{display:flex;align-items:center;gap:16px;padding:clamp(8px,1.5vh,16px) 28px;border-bottom:1px solid var(--line);flex:none}
+.bar .t{font-size:clamp(16px,2vh,22px);font-weight:700;color:var(--ink2)}
+.bar .h{font-size:clamp(24px,3.4vh,36px);font-weight:800;letter-spacing:-.03em}
+.bar .sp{flex:1}
+.bar a,.bar button{font-size:clamp(15px,1.9vh,20px);font-weight:700;padding:clamp(6px,1vh,10px) 18px;border-radius:14px;color:var(--ink2);text-decoration:none;background:var(--soft)}
+.bar .fsbtn{background:rgba(253,242,220,.14);color:var(--fill)}
+
+.body{flex:1;min-height:0;display:flex;gap:24px;padding:18px 28px 22px}
+.stagewrap{flex:1;min-width:0;display:flex;align-items:center;justify-content:center}
+canvas{display:block;border-radius:24px;background:var(--soft)}
+
+/* 오른쪽 — 발표 순서 */
+.side{width:clamp(300px,24vw,420px);flex:none;display:flex;flex-direction:column;gap:14px;min-height:0}
+.side h2{font-size:clamp(24px,3vh,32px);font-weight:800;letter-spacing:-.03em}
+.order{list-style:none;flex:1;min-height:0;display:grid;grid-template-rows:repeat(10,1fr);gap:clamp(5px,.8vh,10px)}
+.order li{display:flex;align-items:center;gap:14px;background:var(--soft);border-radius:14px;padding:0 18px;min-height:0;transition:background .3s}
+.order .no{width:clamp(56px,4.2vw,76px);font-size:clamp(18px,2.4vh,26px);font-weight:700;color:var(--ink3)}
+.order .tm{font-size:clamp(24px,3.6vh,40px);font-weight:800;letter-spacing:-.03em;color:var(--ink3)}
+.order .dot{width:clamp(22px,2.8vh,30px);height:clamp(22px,2.8vh,30px);border-radius:50%;flex:none;margin-left:auto}
+.order li.on{background:var(--panel2)}
+.order li.on .tm{color:var(--ink)}
+.order li.first{background:var(--fill)}
+.order li.first .no,.order li.first .tm{color:var(--fillInk)}
+.order li.pop{animation:pop .5s ease}
+@keyframes pop{0%{transform:scale(.92)}60%{transform:scale(1.04)}100%{transform:scale(1)}}
+.btns{display:flex;gap:10px}
+.btns button{flex:1;font-size:clamp(20px,2.8vh,28px);font-weight:800;padding:clamp(12px,1.8vh,18px);border-radius:16px}
+#start{background:var(--yellow);color:#2c2c2a}
+#start:disabled{opacity:.4}
+#reset{background:var(--soft);color:var(--ink2)}
+.hint{font-size:14px;color:var(--ink3);text-align:center}
+</style>
+</head>
+<body>
+
+<div class="bar">
+  <div class="t">2026 호남권 SW 창업아이디어 경진대회</div>
+  <div class="h">발표 순서 뽑기</div>
+  <div class="sp"></div>
+  <a href="main.html">메인</a>
+  <button id="fs" class="fsbtn">⛶ 전체화면</button>
+</div>
+
+<div class="body">
+  <div class="stagewrap" id="wrap"><canvas id="cv"></canvas></div>
+  <aside class="side">
+    <h2>발표 순서</h2>
+    <ol class="order" id="order"></ol>
+    <div class="btns">
+      <button id="start">START</button>
+      <button id="reset">다시</button>
+    </div>
+    <div class="hint">Space 시작 · R 다시 · F 전체화면</div>
+  </aside>
+</div>
+
+<!-- 물리 엔진 — matter-js 0.19.0 (MIT), 행사장 네트워크 대비 로컬 파일 -->
+<script src="js/vendor/matter.min.js"></script>
+<script type="module">
+import { setupFullscreen, toggleFullscreen } from './js/stage.js';
+const { Engine, Bodies, Body, Composite, Events } = Matter;
+const $ = s => document.querySelector(s);
+
+const TEAMS = 10;
+// 조별 공 색 — 어두운 판 위에서 서로 잘 구분되는 10색
+const COLORS = ['#fdce0f', '#f3a283', '#8b9dc7', '#97bb7b', '#f7c2cc', '#e8c273', '#9ec084', '#a7b5d6', '#f6b9a1', '#fdf2dc'];
+
+// ── 판 크기 (논리 좌표) ─────────────────────
+const W = 900, H = 1100;
+const BALL_R = 22, PEG_R = 7;
+const FINISH_Y = H - 90;
+
+// 보안용 난수 (0 이상 1 미만)
+const rand = () => crypto.getRandomValues(new Uint32Array(1))[0] / 2 ** 32;
+const shuffle = a => { for (let i = a.length - 1; i > 0; i--) { const j = Math.floor(rand() * (i + 1)); [a[i], a[j]] = [a[j], a[i]]; } return a; };
+
+let engine, balls = [], gate = null, finished = [], running = false, stuck = new Map();
+
+function build() {
+  engine = Engine.create({ gravity: { x: 0, y: 1 } });
+  const world = engine.world;
+  const wall = (x, y, w, h, angle = 0) => Bodies.rectangle(x, y, w, h, { isStatic: true, angle, label: 'wall', restitution: 0.4 });
+  // 양옆 벽
+  Composite.add(world, [wall(-10, H / 2, 20, H * 2), wall(W + 10, H / 2, 20, H * 2)]);
+  // 핀 — 엇갈린 줄
+  // 가운데를 기준으로 좌우 대칭, 벽과 바깥 핀 사이는 공 지름보다 넓게 — 좁으면 공이 끼어 멈춘다
+  const rows = 12, top = 230, gapY = 58, gapX = 72, edge = BALL_R * 2 + PEG_R + 10;
+  for (let r = 0; r < rows; r++) {
+    const off = r % 2 ? gapX / 2 : 0;
+    for (let k = -10; k <= 10; k++) {
+      const x = W / 2 + off + k * gapX;
+      if (x < edge || x > W - edge) continue;
+      Composite.add(world, Bodies.circle(x, top + r * gapY, PEG_R, { isStatic: true, label: 'peg', restitution: 0.55 }));
+    }
+  }
+  // 중간 튕김판 — 한쪽으로 몰리지 않게 좌우로 섞는다
+  Composite.add(world, [
+    wall(180, 960, 240, 14, 0.35), wall(W - 180, 960, 240, 14, -0.35),
+  ]);
+  // 대기 칸 — 공이 한 줄로 서 있다가 게이트가 열리면 출발
+  gate = wall(W / 2, 150, W, 16);
+  Composite.add(world, gate);
+
+  // 공 — 출발 자리를 섞는다
+  balls = [];
+  const slots = shuffle([...Array(TEAMS).keys()]);
+  const spacing = (W - 80) / TEAMS;
+  slots.forEach((slot, i) => {
+    const team = i + 1;
+    const x = 40 + spacing * (slot + 0.5) + (rand() - 0.5) * 10;
+    const b = Bodies.circle(x, 110, BALL_R, { restitution: 0.5, friction: 0.002, frictionAir: 0.008, density: 0.002, label: 'ball' });
+    b.team = team;
+    b.color = COLORS[i];
+    balls.push(b);
+  });
+  Composite.add(world, balls);
+  finished = []; stuck = new Map(); running = false;
+  renderOrder();
+}
+
+function start() {
+  if (running || finished.length) return;
+  running = true;
+  Composite.remove(engine.world, gate);
+  // 살짝씩 다르게 출발
+  for (const b of balls) Body.setVelocity(b, { x: (rand() - 0.5) * 3, y: rand() * 1.5 });
+  $('#start').disabled = true;
+}
+
+// ── 한 프레임 ───────────────────────────────
+function step() {
+  Engine.update(engine, 1000 / 60);
+  for (const b of balls) {
+    if (b.done) continue;
+    // 결승선 통과 → 순서 기록, 판에서 뺀다
+    if (b.position.y > FINISH_Y) {
+      b.done = true;
+      finished.push(b);
+      Composite.remove(engine.world, b);
+      renderOrder(true);
+      continue;
+    }
+    // 멈춰 버린 공은 살짝 흔들어 준다 (핀 위에 얹히는 경우)
+    if (running) {
+      const slow = Math.hypot(b.velocity.x, b.velocity.y) < 0.15;
+      const n = slow ? (stuck.get(b) || 0) + 1 : 0;
+      stuck.set(b, n);
+      // 가운데 쪽으로 튕겨 준다 — 벽 쪽으로 밀면 다시 끼인다
+      if (n > 45) { Body.setVelocity(b, { x: Math.sign(W / 2 - b.position.x || 1) * (1.5 + rand() * 2.5), y: -2 }); stuck.set(b, 0); }
+    }
+  }
+  if (running && finished.length === TEAMS) { running = false; }
+  draw();
+  requestAnimationFrame(step);
+}
+
+// ── 그리기 ──────────────────────────────────
+const cv = $('#cv'), ctx = cv.getContext('2d');
+let scale = 1;
+function fit() {
+  const wrap = $('#wrap');
+  const k = Math.min(wrap.clientWidth / W, wrap.clientHeight / H);
+  scale = k;
+  const dpr = window.devicePixelRatio || 1;
+  cv.style.width = `${W * k}px`; cv.style.height = `${H * k}px`;
+  cv.width = Math.round(W * k * dpr); cv.height = Math.round(H * k * dpr);
+  ctx.setTransform(k * dpr, 0, 0, k * dpr, 0, 0);
+}
+
+function draw() {
+  ctx.clearRect(0, 0, W, H);
+  // 결승선
+  ctx.save();
+  ctx.strokeStyle = '#fdce0f'; ctx.lineWidth = 4; ctx.setLineDash([18, 12]);
+  ctx.beginPath(); ctx.moveTo(0, FINISH_Y); ctx.lineTo(W, FINISH_Y); ctx.stroke();
+  ctx.restore();
+  ctx.fillStyle = '#fdce0f'; ctx.font = '800 26px Pretendard Variable, Pretendard, sans-serif'; ctx.textAlign = 'center';
+  ctx.fillText('FINISH', W / 2, FINISH_Y + 44);
+
+  for (const b of Composite.allBodies(engine.world)) {
+    if (b.label === 'peg') {
+      ctx.fillStyle = 'rgba(253,242,220,.55)';
+      ctx.beginPath(); ctx.arc(b.position.x, b.position.y, PEG_R, 0, Math.PI * 2); ctx.fill();
+    } else if (b.label === 'wall' && b !== gate) {
+      ctx.fillStyle = '#454541';
+      ctx.beginPath(); b.vertices.forEach((v, i) => i ? ctx.lineTo(v.x, v.y) : ctx.moveTo(v.x, v.y)); ctx.closePath(); ctx.fill();
+    } else if (b === gate) {
+      ctx.fillStyle = 'rgba(253,206,15,.5)';
+      ctx.fillRect(0, b.position.y - 4, W, 8);
+    }
+  }
+  for (const b of balls) {
+    if (b.done) continue;
+    ctx.fillStyle = b.color;
+    ctx.beginPath(); ctx.arc(b.position.x, b.position.y, BALL_R, 0, Math.PI * 2); ctx.fill();
+    ctx.fillStyle = '#2c2c2a';
+    ctx.font = '800 22px Pretendard Variable, Pretendard, sans-serif';
+    ctx.textAlign = 'center'; ctx.textBaseline = 'middle';
+    ctx.fillText(String(b.team), b.position.x, b.position.y + 1);
+  }
+}
+
+// ── 발표 순서 목록 ───────────────────────────
+function renderOrder(popLast = false) {
+  const ol = $('#order');
+  ol.innerHTML = Array.from({ length: TEAMS }, (_, i) => {
+    const b = finished[i];
+    const cls = [b ? 'on' : '', b && i === 0 ? 'first' : '', popLast && b && i === finished.length - 1 ? 'pop' : ''].join(' ');
+    return `<li class="${cls}"><span class="no">${i + 1}번째</span><span class="tm">${b ? `${b.team}조` : '—'}</span>${b ? `<span class="dot" style="background:${b.color}"></span>` : ''}</li>`;
+  }).join('');
+}
+
+$('#start').onclick = start;
+$('#reset').onclick = () => { if (!running || confirm('진행 중이에요. 처음부터 다시 할까요?')) { build(); $('#start').disabled = false; } };
+document.addEventListener('keydown', e => {
+  if (e.code === 'Space') { e.preventDefault(); start(); }
+  else if (e.key === 'r' || e.key === 'R') $('#reset').click();
+  else if (e.key === 'f' || e.key === 'F') toggleFullscreen();
+});
+setupFullscreen($('#fs'), fit);
+window.addEventListener('resize', fit);
+
+build(); fit(); requestAnimationFrame(step);
+document.fonts?.ready.then(() => draw());
+</script>
+</body>
+</html>
