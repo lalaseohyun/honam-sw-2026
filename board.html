@@ -58,6 +58,9 @@ body.authed .login-wrap{display:none}
 .login button{font-size:24px;font-weight:800;padding:16px;border-radius:14px;background:var(--fill);color:var(--fillInk);margin-top:6px}
 .login .msg{font-size:24px;color:var(--no);min-height:1em}
 
+/* 보기 전용 링크 — 로그아웃·메인 버튼 숨김 */
+body.view-only #logout,body.view-only .navlink[href="main.html"]{display:none}
+
 /* 제출물 크게 보기 */
 .detail{position:fixed;inset:0;z-index:40;background:rgba(0,0,0,.72);display:flex;align-items:center;justify-content:center;padding:4vh 5vw}
 .detail[hidden]{display:none}
@@ -156,6 +159,25 @@ function render() {
 
 }
 
+// 보기 전용 링크 — board.html?v=VIEW_KEY 로 들어오면 로그인 없이 현황만 본다 (교수진 참고용, 행사 당일 요청).
+// /public 전체는 로그인해야 읽히므로, 로그인 없이도 열려 있는 조별 경로 10개를 따로 구독한다.
+const VIEW_KEY = 'j4hp3ujt';
+const viewOnly = new URLSearchParams(location.search).get('v') === VIEW_KEY;
+
+function startViewOnly() {
+  document.body.classList.add('authed', 'view-only');
+  onConnection(ok => $('#dot').classList.toggle('live', ok));
+  const parts = {};
+  let queued = false;
+  for (const n of TEAM_NOS) {
+    onValue(ref(db, `public/${n}`), s => {
+      parts[n] = s.val();
+      pub = { ...parts };
+      if (!queued) { queued = true; setTimeout(() => { queued = false; render(); }, 0); }
+    }, e => { $('#board').innerHTML = `<div class="hd">현황을 불러오지 못했어요: ${esc(e.message)}</div>`; });
+  }
+}
+
 // 로그인해야 구독을 시작한다 — DB 규칙도 /public 전체 읽기는 로그인한 사람만 허용
 function start() {
   onConnection(ok => $('#dot').classList.toggle('live', ok));
@@ -163,7 +185,8 @@ function start() {
     e => { $('#board').innerHTML = `<div class="hd">현황을 불러오지 못했어요: ${esc(e.message)}</div>`; });
 }
 
-loadAuth().then(({ auth, onAuthStateChanged, signInWithEmailAndPassword, signOut }) => {
+if (viewOnly) startViewOnly();
+else loadAuth().then(({ auth, onAuthStateChanged, signInWithEmailAndPassword, signOut }) => {
   let started = false;
   $('#login').onsubmit = async e => {
     e.preventDefault();
