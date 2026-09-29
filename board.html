@@ -20,10 +20,10 @@ body{display:flex;flex-direction:column;height:100dvh;overflow:hidden;font-size:
 .dot{width:14px;height:14px;border-radius:50%;background:var(--no);flex:none}
 .dot.live{background:var(--yellow)}
 
-/* 10×5 격자 — 칸은 보기 전용. 클릭·호버 반응 없음 */
+/* 10조×단계 격자 — 제출된 칸만 누를 수 있다. 누르면 그 제출물 전체를 크게 띄운다 (행사 당일 요청) */
 #board{flex:1;min-height:0;overflow:hidden;padding:18px 32px 12px;
   display:grid;grid-template-columns:96px repeat(var(--stages,6),minmax(0,1fr));
-  grid-template-rows:auto repeat(10,minmax(min-content,1fr));gap:8px 10px;pointer-events:none}
+  grid-template-rows:auto repeat(10,minmax(min-content,1fr));gap:8px 10px}
 .hd{display:flex;align-items:baseline;gap:10px;padding:0 6px 4px;font-size:24px;font-weight:800;letter-spacing:-.02em;white-space:nowrap;overflow:hidden}
 .hd .k{color:var(--ink3);font-weight:700}
 .hd .c{margin-left:auto;font-size:24px;font-weight:700;color:var(--ink3)}
@@ -31,7 +31,8 @@ body{display:flex;flex-direction:column;height:100dvh;overflow:hidden;font-size:
 .tn{display:grid;place-items:center;background:var(--soft);border-radius:14px;font-size:30px;font-weight:800;letter-spacing:-.03em}
 .cell{display:flex;align-items:center;gap:12px;background:var(--line2);border-radius:14px;padding:8px 12px;min-width:0;overflow:hidden;transition:background .4s}
 .cell.empty{justify-content:center;color:var(--ink3);font-size:24px;font-weight:600}
-.cell.done{background:var(--soft)}
+.cell.done{background:var(--soft);cursor:pointer}
+.cell.done:hover{box-shadow:inset 0 0 0 3px var(--line)}
 .cell .th{flex:none;width:64px;height:64px;border-radius:10px;object-fit:cover;background:var(--panel2)}
 .cell .ck{flex:none;width:34px;height:34px;border-radius:50%;background:var(--yellow);color:var(--fillInk);display:grid;place-items:center;font-size:20px;font-weight:900}
 .cell .sum{font-size:24px;font-weight:700;line-height:1.3;letter-spacing:-.02em;
@@ -43,6 +44,22 @@ body{display:flex;flex-direction:column;height:100dvh;overflow:hidden;font-size:
 .foot .note{font-size:24px;color:var(--ink3);margin-right:auto}
 .navlink{font-size:24px;font-weight:700;color:var(--ink3);text-decoration:none;padding:12px 18px;border-radius:16px}
 .navlink:hover{background:var(--soft);color:var(--ink)}
+/* 제출물 크게 보기 */
+.detail{position:fixed;inset:0;z-index:40;background:rgba(0,0,0,.72);display:flex;align-items:center;justify-content:center;padding:4vh 5vw}
+.detail[hidden]{display:none}
+.dsheet{width:min(1400px,100%);max-height:100%;overflow:auto;background:var(--bg);border-radius:28px;padding:clamp(28px,3.4vw,56px);
+  display:flex;flex-direction:column;gap:clamp(18px,2.4vh,30px);box-shadow:0 20px 60px rgba(0,0,0,.5);cursor:default;user-select:text}
+.dhead{display:flex;align-items:flex-start;gap:20px}
+.dhead .who{flex:1}
+.dhead .k{font-size:clamp(24px,1.6vw,30px);font-weight:700;color:var(--yellow)}
+.dhead h2{font-size:clamp(40px,3.6vw,68px);font-weight:800;letter-spacing:-.035em;line-height:1.25;margin-top:6px;word-break:keep-all}
+.dclose{flex:none;width:64px;height:64px;border-radius:50%;background:var(--soft);font-size:28px;font-weight:800}
+.dfield{background:var(--soft);border-radius:22px;padding:clamp(20px,2.4vh,30px) clamp(24px,2vw,36px)}
+.dfield .fl{font-size:clamp(24px,1.5vw,28px);font-weight:800;color:var(--yellow);margin-bottom:10px}
+.dfield .fx{font-size:clamp(30px,2.3vw,44px);line-height:1.6;font-weight:500;white-space:pre-wrap;word-break:keep-all;overflow-wrap:anywhere}
+.dshots{display:flex;gap:16px;flex-wrap:wrap}
+.dshots img{max-height:46vh;max-width:100%;border-radius:16px}
+.dfield a{color:var(--fill);font-size:clamp(28px,2vw,38px);font-weight:700}
 .fsbtn{font-size:24px;font-weight:700;padding:12px 22px;border-radius:16px;background:rgba(253,242,220,.14);color:var(--fill)}
 </style>
 </head>
@@ -57,6 +74,8 @@ body{display:flex;flex-direction:column;height:100dvh;overflow:hidden;font-size:
 </div>
 
 <div id="board" aria-live="polite"></div>
+<!-- 제출물 크게 보기 — #board는 2초마다 다시 그려지므로 바깥에 둔다 -->
+<div class="detail" id="detail" hidden></div>
 
 <div class="foot">
   <span class="note">라인교육연구소 &nbsp;·&nbsp; 의미있고 재미있게</span>
@@ -65,7 +84,8 @@ body{display:flex;flex-direction:column;height:100dvh;overflow:hidden;font-size:
 </div>
 
 <script type="module">
-import { db, ref, onValue, onConnection } from './js/db.js';
+import { db, ref, get, onValue, onConnection } from './js/db.js';
+import { TEAMS } from './js/data.js';
 import { TEAM_NOS, STAGES } from './js/data.js';
 import { setupFullscreen, toggleFullscreen } from './js/stage.js';
 
@@ -101,7 +121,7 @@ function render() {
       if (!v?.submittedAt) { html += `<div class="cell empty">—</div>`; continue; }
       const fresh = (freshUntil.get(key) || 0) > now;
       const lead = v.thumb ? `<img class="th" src="${esc(v.thumb)}" alt="">` : `<span class="ck">✓</span>`;
-      html += `<div class="cell done ${fresh ? 'fresh' : ''}">${lead}<span class="sum">${esc(v.summary)}</span></div>`;
+      html += `<div class="cell done ${fresh ? 'fresh' : ''}" data-cell="${n}:${s.id}" role="button" tabindex="0">${lead}<span class="sum">${esc(v.summary)}</span></div>`;
     }
   }
   $('#board').innerHTML = html;
@@ -115,6 +135,40 @@ onValue(ref(db, 'public'), s => { pub = s.val() || {}; render(); },
 
 // 방금 들어온 칸 강조를 시간이 지나면 끈다
 setInterval(() => { if ([...freshUntil.values()].some(t => t > Date.now() - 2000)) render(); }, 2000);
+
+// ── 칸을 누르면 그 제출물 전체를 크게 ──────────
+// 현황판 구독은 /public(요약)만. 누른 칸 하나만 그때 /private에서 읽어 온다.
+async function openDetail(n, sid) {
+  const s = STAGES.find(x => x.id === sid);
+  const box = $('#detail');
+  box.hidden = false;
+  box.innerHTML = `<div class="dsheet"><div class="dhead"><div class="who"><div class="k">${n}조 · ${esc(s.name)}</div>
+    <h2>불러오는 중…</h2></div><button class="dclose" data-dclose aria-label="닫기">✕</button></div></div>`;
+  let v = null;
+  try { v = (await get(ref(db, `private/${n}/${sid}`))).val(); } catch (e) { console.error(e); }
+  if (box.hidden) return;
+  const members = TEAMS[n].members.map(m => m.split(' ')[1]).join(' · ');
+  const title = pub[n]?.[sid]?.summary || '';
+  const fields = v ? s.fields.map(f => v.fields?.[f.key] ? `
+    <div class="dfield"><div class="fl">${esc(f.label)}</div><div class="fx">${esc(v.fields[f.key])}</div></div>` : '').join('') : '';
+  const photos = v?.photos?.length ? `<div class="dfield"><div class="fl">사진</div><div class="dshots">${v.photos.map(p => `<img src="${esc(p)}" alt="">`).join('')}</div></div>` : '';
+  const pdf = v?.pdfUrl ? `<div class="dfield"><div class="fl">발표자료</div><a href="${esc(v.pdfUrl)}" target="_blank" rel="noopener">📄 ${esc(v.pdfName)}</a></div>` : '';
+  box.innerHTML = `<div class="dsheet" role="dialog" aria-label="${n}조 ${esc(s.name)}">
+    <div class="dhead"><div class="who"><div class="k">${n}조 · ${esc(s.name)} · ${esc(members)}</div><h2>${esc(title)}</h2></div>
+      <button class="dclose" data-dclose aria-label="닫기">✕</button></div>
+    ${v ? fields + photos + pdf : '<div class="dfield"><div class="fx">내용을 불러오지 못했어요.</div></div>'}
+  </div>`;
+}
+const closeDetail = () => { const b = $('#detail'); b.hidden = true; b.innerHTML = ''; };
+
+$('#board').addEventListener('click', e => {
+  const c = e.target.closest('[data-cell]');
+  if (c) { const [n, sid] = c.dataset.cell.split(':'); openDetail(Number(n), sid); }
+});
+$('#detail').addEventListener('click', e => {
+  if (e.target.id === 'detail' || e.target.closest('[data-dclose]')) closeDetail();
+});
+document.addEventListener('keydown', e => { if (e.key === 'Escape' && !$('#detail').hidden) closeDetail(); });
 
 setupFullscreen($('#fs'));
 $('#board').style.setProperty('--stages', STAGES.length);
