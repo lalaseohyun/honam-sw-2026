@@ -34,7 +34,7 @@ export const STAGES = [
     { key:'reason', label:'주제 선정 이유', hint:'이 주제를 해 보고 싶은 이유', long:true } ] },
   { id:'s1', name:'문제정의', photo:true, summary:'persona', fields:[
     { key:'persona', label:'페르소나', hint:'누가 가장 불편한가요? (나이·상황·특징)' },
-    { key:'problem', label:'문제', hint:'언제, 어떤 상황에서, 무엇 때문에 불편한가요?', long:true } ] },
+    { key:'problem', label:'문제정의문(HMW)', hint:'어떻게 하면 ~한 OOO이 ~할 때, ~할 수 있을까?', long:true } ] },
   { id:'s2', name:'1차 아이디어', summary:'name', fields:[
     { key:'name',     label:'아이디어 이름' },
     { key:'target',   label:'대상 고객' },
