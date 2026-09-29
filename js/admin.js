@@ -112,7 +112,7 @@ function detailView(d, { n, sid }) {
         <button class="x" data-close aria-label="닫기">✕</button>
       </div>
       ${s.fields.map(f => `<div class="fv"><div class="fl">${esc(f.label)}</div><div class="fx">${esc(v.fields?.[f.key] || '')}</div></div>`).join('')}
-      ${v.photos?.length ? `<div class="fv"><div class="fl">사진 ${v.photos.length}장</div>
+      ${v.photos?.length ? `<div class="fv"><div class="fl">${esc(s.photoLabel || '사진')} ${v.photos.length}장</div>
         <div class="shots">${v.photos.map(src => `<img src="${esc(src)}" alt="">`).join('')}</div></div>` : ''}
       ${v.pdfUrl ? `<div class="fv"><div class="fl">발표자료</div><a class="pdf" href="${esc(v.pdfUrl)}" target="_blank" rel="noopener">📄 ${esc(v.pdfName)} 열기</a></div>` : ''}
       <div class="sheet-foot">

@@ -107,7 +107,7 @@ export function mountProgress(el, teamNo, { openStage } = {}) {
         </label>`).join('')}
       ${stage.photo ? `
         <div class="fld">
-          <span class="fl">사진 <small>(선택 · 최대 ${MAX_PHOTOS}장 · 첫 장이 현황판에 떠요)</small></span>
+          <span class="fl">${esc(stage.photoLabel || '사진')} <small>(선택 · 최대 ${MAX_PHOTOS}장 · 첫 장이 현황판에 떠요)</small></span>
           <div class="photos" data-photos></div>
           <label class="pickbtn" data-pick-photo>＋ 사진 추가<input type="file" accept="image/*" multiple hidden data-photo-input></label>
         </div>` : ''}

@@ -233,7 +233,7 @@ async function openDetail(n, sid) {
   const title = pub[n]?.[sid]?.summary || '';
   const fields = v ? s.fields.map(f => v.fields?.[f.key] ? `
     <div class="dfield"><div class="fl">${esc(f.label)}</div><div class="fx">${esc(v.fields[f.key])}</div></div>` : '').join('') : '';
-  const photos = v?.photos?.length ? `<div class="dfield"><div class="fl">사진</div><div class="dshots">${v.photos.map(p => `<img src="${esc(p)}" alt="">`).join('')}</div></div>` : '';
+  const photos = v?.photos?.length ? `<div class="dfield"><div class="fl">${esc(s.photoLabel || '사진')}</div><div class="dshots">${v.photos.map(p => `<img src="${esc(p)}" alt="">`).join('')}</div></div>` : '';
   const pdf = v?.pdfUrl ? `<div class="dfield"><div class="fl">발표자료</div><a href="${esc(v.pdfUrl)}" target="_blank" rel="noopener">📄 ${esc(v.pdfName)}</a></div>` : '';
   box.innerHTML = `<div class="dsheet" role="dialog" aria-label="${n}조 ${esc(s.name)}">
     <div class="dhead"><div class="who"><div class="k">${n}조 · ${esc(s.name)} · ${esc(members)}</div><h2>${esc(title)}</h2></div>
