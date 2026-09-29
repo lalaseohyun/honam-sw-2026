@@ -7,7 +7,7 @@
         ".write": "auth != null",
         "$stage": {
           ".write": true,
-          ".validate": "$team.matches(/^([1-9]|10)$/) && $stage.matches(/^s[1-5]$/) && newData.child('submittedAt').isNumber() && newData.child('summary').isString() && newData.child('summary').val().length <= 200"
+          ".validate": "$team.matches(/^([1-9]|10)$/) && $stage.matches(/^s[0-5]$/) && newData.child('submittedAt').isNumber() && newData.child('summary').isString() && newData.child('summary').val().length <= 200"
         }
       }
     },
@@ -19,7 +19,7 @@
         ".write": "auth != null",
         "$stage": {
           ".write": true,
-          ".validate": "$team.matches(/^([1-9]|10)$/) && $stage.matches(/^s[1-5]$/) && newData.child('submittedAt').isNumber() && newData.child('fields').exists()"
+          ".validate": "$team.matches(/^([1-9]|10)$/) && $stage.matches(/^s[0-5]$/) && newData.child('submittedAt').isNumber() && newData.child('fields').exists()"
         }
       }
     },

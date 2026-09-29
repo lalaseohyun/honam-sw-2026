@@ -1,4 +1,4 @@
-// 참가자 폰 — 진행 제출 탭 (5단계)
+// 참가자 폰 — 진행 제출 탭 (6단계). 운영자 화면(admin.html)의 '직접 입력'도 이 화면을 그대로 쓴다
 //
 // 단계 목록은 한 번만 그리고, 상태 글자만 제자리에서 바꾼다 — 입력 중인 칸이
 // 다시 그려져 날아가지 않도록. 입력 중인 글은 이 폰에 임시 저장(draft)해 둔다.
@@ -21,7 +21,12 @@ const draft = {
   del(k) { try { localStorage.removeItem(k); } catch {} }
 };
 
-export function mountProgress(el, teamNo) {
+/**
+ * @param {HTMLElement} el
+ * @param {number} teamNo
+ * @param {{openStage?: string}} [opts]  처음부터 펼쳐 둘 단계 (운영자 화면에서 칸을 눌렀을 때)
+ */
+export function mountProgress(el, teamNo, { openStage } = {}) {
   startQueueWorker();
 
   let pub = {};          // /public/{team}
@@ -240,6 +245,7 @@ export function mountProgress(el, teamNo) {
 
   const offPub = onValue(ref(db, `public/${teamNo}`), s => { pub = s.val() || {}; paintStatus(); });
   const offQ = onQueueChange(q => { queue = q; paintStatus(); });
+  if (openStage) open(openStage);
 
   return () => { offPub(); offQ(); window.removeEventListener('beforeunload', onBeforeUnload); };
 }

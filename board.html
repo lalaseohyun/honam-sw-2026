@@ -22,7 +22,7 @@ body{display:flex;flex-direction:column;height:100dvh;overflow:hidden;font-size:
 
 /* 10×5 격자 — 칸은 보기 전용. 클릭·호버 반응 없음 */
 #board{flex:1;min-height:0;overflow:hidden;padding:18px 32px 12px;
-  display:grid;grid-template-columns:96px repeat(5,minmax(0,1fr));
+  display:grid;grid-template-columns:96px repeat(var(--stages,6),minmax(0,1fr));
   grid-template-rows:auto repeat(10,minmax(min-content,1fr));gap:8px 10px;pointer-events:none}
 .hd{display:flex;align-items:baseline;gap:10px;padding:0 6px 4px;font-size:24px;font-weight:800;letter-spacing:-.02em;white-space:nowrap;overflow:hidden}
 .hd .k{color:var(--ink3);font-weight:700}
@@ -114,6 +114,7 @@ onValue(ref(db, 'public'), s => { pub = s.val() || {}; render(); },
 setInterval(() => { if ([...freshUntil.values()].some(t => t > Date.now() - 2000)) render(); }, 2000);
 
 setupFullscreen($('#fs'));
+$('#board').style.setProperty('--stages', STAGES.length);
 document.addEventListener('keydown', e => { if (e.key === 'f' || e.key === 'F') toggleFullscreen(); });
 
 // 무인 운영 — 화면 꺼짐 방지 (지원하는 브라우저에서만, 탭이 다시 보이면 다시 요청)

@@ -2,11 +2,13 @@
 //   · 제출 건수 카운터: public(현황판)과 private(원본)을 따로 세어 대조 (사양서 §8-6)
 //   · 전체 제출물 열람 · 삭제
 //   · 조별 대표 폰 해제 (PIN 초기화를 대신함)
+//   · 진행 제출 직접 입력 — 참가자 폰의 입력 화면(progress-view.js)을 그대로 띄운다
 //   · JSON 전체 백업 · CSV 내보내기 (사양서 §8-7)
 
 import { db, ref, get, update, remove, onValue, onConnection, withTimeout, loadAuth } from './db.js';
 import { TEAMS, TEAM_NOS, STAGES } from './data.js';
 import { toCsv, progressRows, quizRows, countSubmissions, fmtTime } from './export.js';
+import { mountProgress } from './progress-view.js';
 
 const $ = s => document.querySelector(s);
 const esc = s => String(s ?? '').replace(/[&<>"']/g, c => ({ '&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;' }[c]));
@@ -30,7 +32,7 @@ export function renderInto(root, d, openDetail) {
   const claimed = TEAM_NOS.filter(n => d.claims[n] && !d.claims[n].released);
 
   root.innerHTML = `
-    <section class="counter">
+    <section class="counter" style="--cols:${STAGES.length + 1}">
       <div class="big-count">
         <div class="k">제출 건수</div>
         <div class="v"><b>${totalPriv}</b> / ${TEAM_NOS.length * STAGES.length}</div>
@@ -66,12 +68,12 @@ export function renderInto(root, d, openDetail) {
             ? `<span class="on">● ${hhmm(c.at)} 접속</span><button class="mini" data-release="${n}">해제</button>`
             : `<span class="off">—</span>`;
           return `<tr>
-            <th class="tn" title="${esc(TEAMS[n].members.join(', '))}">${n}조</th>
+            <th class="tn" title="${esc(TEAMS[n].members.join(', '))}">${n}조<button class="mini entry-btn" data-entry="${n}">입력</button></th>
             <td class="phone">${phone}</td>
             ${STAGES.map(s => {
               const v = d.priv[n]?.[s.id];
               const p = d.pub[n]?.[s.id];
-              if (!v) return `<td class="sub empty">${p ? '<span class="warn">현황판에만 있음</span>' : '—'}</td>`;
+              if (!v) return `<td class="sub empty">${p ? '<span class="warn">현황판에만 있음</span>' : `<button data-entry="${n}:${s.id}" title="${n}조 ${esc(s.name)} 직접 입력">＋</button>`}</td>`;
               const extra = v.pdfName ? '📄' : v.photos?.length ? `📷${v.photos.length}` : '';
               return `<td class="sub done"><button data-open="${n}:${s.id}">
                 <span class="t">${hhmm(v.submittedAt)}</span><span class="x">${extra}</span>
@@ -113,7 +115,10 @@ function detailView(d, { n, sid }) {
       ${v.photos?.length ? `<div class="fv"><div class="fl">사진 ${v.photos.length}장</div>
         <div class="shots">${v.photos.map(src => `<img src="${esc(src)}" alt="">`).join('')}</div></div>` : ''}
       ${v.pdfUrl ? `<div class="fv"><div class="fl">발표자료</div><a class="pdf" href="${esc(v.pdfUrl)}" target="_blank" rel="noopener">📄 ${esc(v.pdfName)} 열기</a></div>` : ''}
-      <div class="sheet-foot"><button class="ghost danger" data-delete="${n}:${sid}">이 제출물 삭제</button></div>
+      <div class="sheet-foot">
+        <button class="ghost edit" data-entry="${n}:${sid}">수정하기</button>
+        <button class="ghost danger" data-delete="${n}:${sid}">이 제출물 삭제</button>
+      </div>
     </div>
   </div>`;
 }
@@ -124,6 +129,33 @@ function render() {
   const scroll = $('.modal .sheet')?.scrollTop;
   renderInto($('#app'), data, detail);
   if (scroll) $('.modal .sheet').scrollTop = scroll;
+}
+
+// ── 직접 입력 ────────────────────────────────
+// 참가자 폰과 같은 입력 화면을 그 조 번호로 띄운다. 저장하면 현황판·그 조 폰에 바로 반영된다.
+let unmountEntry = null;
+function openEntry(n, sid) {
+  closeEntry();
+  detail = null; render();
+  const box = $('#entry');
+  box.hidden = false;
+  box.innerHTML = `<div class="modal" data-entry-close>
+    <div class="sheet entry-sheet" role="dialog" aria-label="${n}조 직접 입력">
+      <div class="sheet-head">
+        <div><div class="k">${esc(TEAMS[n].members.map(m => m.split(' ')[1]).join(' · '))}</div>
+          <h3>${n}조 직접 입력</h3>
+          <div class="k">저장하면 현황판과 ${n}조 폰에도 바로 반영돼요</div></div>
+        <button class="x" data-entry-close aria-label="닫기">✕</button>
+      </div>
+      <div class="entry-body"></div>
+    </div>
+  </div>`;
+  unmountEntry = mountProgress(box.querySelector('.entry-body'), n, { openStage: sid });
+}
+function closeEntry() {
+  unmountEntry?.(); unmountEntry = null;
+  const box = $('#entry');
+  box.hidden = true; box.innerHTML = '';
 }
 
 // ── 동작 ─────────────────────────────────────
@@ -159,6 +191,8 @@ async function exportQuiz() {
 function bind() {
   $('#app').addEventListener('click', async e => {
     const t = e.target;
+    const en = t.closest('[data-entry]');
+    if (en) { const [n, sid] = en.dataset.entry.split(':'); return openEntry(Number(n), sid); }
     const open = t.closest('[data-open]');
     if (open) { const [n, sid] = open.dataset.open.split(':'); detail = { n: Number(n), sid }; return render(); }
     if (t.matches('[data-close]')) { detail = null; return render(); }
@@ -188,7 +222,12 @@ function bind() {
       ex.disabled = false;
     }
   });
-  document.addEventListener('keydown', e => { if (e.key === 'Escape' && detail) { detail = null; render(); } });
+  document.addEventListener('keydown', e => {
+    if (e.key !== 'Escape') return;
+    if (unmountEntry) closeEntry();
+    else if (detail) { detail = null; render(); }
+  });
+  $('#entry').addEventListener('click', e => { if (e.target.matches('[data-entry-close]')) closeEntry(); });
 }
 
 function subscribe() {

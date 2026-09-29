@@ -31,5 +31,6 @@ test('퀴즈 CSV: 공개한 문제만, 순위순', () => {
 
 test('제출 건수: public과 private를 따로 센다', () => {
   const c = countSubmissions({ 1: { s1: { submittedAt: 1 } } }, { 1: { s1: { submittedAt: 1 } }, 2: { s1: { submittedAt: 1 } } });
-  assert.deepEqual(c[0], { id: 's1', name: '문제정의', pub: 1, priv: 2 });
+  assert.deepEqual(c.find(x => x.id === 's1'), { id: 's1', name: '문제정의', pub: 1, priv: 2 });
+  assert.equal(c[0].id, 's0');   // 주제·상황이 맨 앞
 });

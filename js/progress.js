@@ -1,4 +1,4 @@
-// 진행 5단계 제출 로직 (사양서 §5, §8) — 화면은 progress-view.js
+// 진행 6단계 제출 로직 (사양서 §5, §8) — 화면은 progress-view.js
 //
 // 한 번 제출 = 한 번의 update()로 두 경로를 같이 쓴다.
 //   /private/{team}/{stage} = { submittedAt, fields, photos[], pdfUrl?, pdfName? }

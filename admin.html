@@ -7,6 +7,7 @@
 <title>운영자 · 2026 호남권 SW 창업아이디어 경진대회</title>
 <link rel="stylesheet" href="https://cdn.jsdelivr.net/gh/orioncactus/pretendard@v1.3.9/dist/web/variable/pretendardvariable-dynamic-subset.min.css">
 <link rel="stylesheet" href="css/tokens.css">
+<link rel="stylesheet" href="css/progress.css">
 <style>
 body:not(.authed) .auth-only{display:none !important}
 body.authed .login-wrap{display:none}
@@ -22,7 +23,7 @@ body.authed .login-wrap{display:none}
 #app{max-width:1280px;margin:0 auto;padding:22px 24px 48px;display:flex;flex-direction:column;gap:18px}
 
 /* 카운터 */
-.counter{display:grid;grid-template-columns:1.6fr repeat(6,1fr);gap:10px}
+.counter{display:grid;grid-template-columns:1.6fr repeat(var(--cols,7),1fr);gap:10px}
 .counter > div{background:var(--soft);border-radius:18px;padding:16px 16px 14px}
 .counter .k{font-size:12.5px;font-weight:700;color:var(--ink3)}
 .counter .v{font-size:22px;font-weight:700;color:var(--ink2);margin-top:4px;font-variant-numeric:tabular-nums}
@@ -77,12 +78,21 @@ table.grid{width:100%;border-collapse:separate;border-spacing:5px;min-width:980p
 .sheet .k{font-size:13px;color:var(--ink3);font-weight:600}
 .sheet .x{width:38px;height:38px;border-radius:50%;background:var(--soft);font-size:16px;font-weight:800}
 .fv{background:var(--soft);border-radius:14px;padding:14px 16px}
-.fl{font-size:12.5px;font-weight:700;color:var(--yellow);margin-bottom:6px}
+.fv .fl{font-size:12.5px;font-weight:700;color:var(--yellow);margin-bottom:6px}
 .fx{font-size:15.5px;line-height:1.65;white-space:pre-wrap;word-break:keep-all;overflow-wrap:anywhere}
 .shots{display:flex;flex-direction:column;gap:10px}
 .shots img{width:100%;border-radius:10px;display:block}
 .pdf{color:var(--fill);font-weight:700;font-size:15px}
-.sheet-foot{display:flex;justify-content:flex-end;margin-top:auto;padding-top:10px}
+.sheet-foot{display:flex;justify-content:flex-end;gap:8px;margin-top:auto;padding-top:10px}
+.sheet-foot .edit{color:var(--fill);border-color:var(--line)}
+
+/* 직접 입력 */
+#entry[hidden]{display:none !important}
+.entry-sheet{gap:14px}
+.entry-sheet .stages{gap:8px}
+.tn .entry-btn{display:block;margin:6px auto 0;color:var(--yellow)}
+.sub.empty button{width:100%;height:100%;min-height:44px;border-radius:10px;color:var(--ink3);font-size:18px;font-weight:700}
+.sub.empty button:hover{background:var(--panel2);color:var(--yellow)}
 
 /* 로그인 */
 .login-wrap{min-height:80dvh;display:flex;align-items:center;justify-content:center;padding:24px 16px}
@@ -124,6 +134,8 @@ table.grid{width:100%;border-collapse:separate;border-spacing:5px;min-width:980p
 </div>
 
 <main id="app" class="auth-only"><div class="panel">불러오는 중…</div></main>
+<!-- 직접 입력 패널 — #app은 데이터가 바뀔 때마다 다시 그려지므로, 입력 중인 칸이 날아가지 않게 바깥에 둔다 -->
+<div id="entry" class="auth-only" hidden></div>
 
 <script type="module">
 import { startAdmin } from './js/admin.js';
