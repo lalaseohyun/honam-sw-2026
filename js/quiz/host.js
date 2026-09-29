@@ -14,7 +14,7 @@ import { db, ref, update, onValue, onConnection, serverTimestamp, withTimeout, l
 import { QUESTIONS, TEAM_NOS } from '../data.js';
 import { deriveLive, emptyState, questionStart, stageOf } from './state.js';
 import { rank, realAnswers, tally } from '../score.js';
-import { setupFullscreen, toggleFullscreen, refit } from '../stage.js';
+import { setupFullscreen, toggleFullscreen } from '../stage.js';
 
 const $ = s => document.querySelector(s);
 const esc = s => String(s ?? '').replace(/[&<>"']/g, c => ({ '&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;' }[c]));
@@ -184,8 +184,7 @@ function render() {
   if (showRanking && state.phase === 'quiz') $('#rankpanel').innerHTML = rankPanel();
 
   renderControls();
-  refit();      // 전체화면이면 배율을 다시 잡는다 (배율마다 fitQuestion이 다시 돈다)
-  if (!document.body.classList.contains('fs')) fitQuestion();
+  fitQuestion();
 }
 
 function renderControls() {
@@ -337,7 +336,7 @@ export function questionView() {
 }
 
 // 문제 글자·보기 칸은 화면 폭에 맞춰 크게 잡아두고, 넘칠 때만 이 문항에서 줄인다 (부안 fitQuestion).
-// 반환: 줄였거나 그래도 넘치면 true — 전체화면 배율을 고를 때 "이 배율은 너무 크다"는 신호
+// 반환: 문제·보기를 줄였으면 true
 export function fitQuestion() {
   const view = $('#stage .qview');
   if (!view) return false;
@@ -353,6 +352,7 @@ export function fitQuestion() {
     for (; qs0 > 0.45 && lines() > 2; qs0 -= 0.02) set('--qs', qs0.toFixed(2));
   }
   const shrankForLines = qs0 < 1;
+  const rows = !!view.querySelector('.choices.rows');
 
   // 정답 페이지 — 해설이 넘치면 해설·보기·문제가 번갈아 조금씩 양보한다.
   // 한쪽만 줄이면 해설은 44px인데 보기가 못 읽을 만큼 작아지는 식으로 균형이 깨진다(q5 실측).
@@ -366,6 +366,11 @@ export function fitQuestion() {
     let cs = 1, qs = qs0;
     const choices = min => { for (; cs >= min && tight(); cs -= 0.02) set('--cs', cs.toFixed(2)); };
     const question = min => { for (; qs >= min && tight(); qs -= 0.02) set('--qs', qs.toFixed(2)); };
+    if (rows) {                                 // 다섯 줄 문항 — 한 줄짜리 문제를 먼저 줄이고 보기는 지킨다
+      expl(30); question(0.6); choices(0.8);
+      expl(24); question(0.45); choices(0.6);
+      return true;
+    }
     expl(34); choices(0.8); question(0.8);      // 1단계: 모두 조금씩
     expl(28); choices(0.68); question(0.65);    // 2단계
     expl(24); choices(0.55); question(0.5);     // 마지막: 최소 크기까지
@@ -375,7 +380,7 @@ export function fitQuestion() {
   const over = () => view.scrollHeight - view.clientHeight > 4;
   if (!over()) return shrankForLines;
   let qs = qs0;
-  for (; qs >= 0.8 && over(); qs -= 0.02) set('--qs', qs.toFixed(2));
+  for (; qs >= (rows ? 0.55 : 0.8) && over(); qs -= 0.02) set('--qs', qs.toFixed(2));
   if (over()) for (let cs = 1; cs >= 0.6 && over(); cs -= 0.02) set('--cs', cs.toFixed(2));
   for (; qs >= 0.5 && over(); qs -= 0.02) set('--qs', qs.toFixed(2));
   return true;
@@ -411,12 +416,9 @@ function bindControls() {
   $('#reset-q').onclick = resetQuestion;
   $('#reset-all').onclick = resetAll;
   $('#toggle-rank').onclick = () => { showRanking = !showRanking; scheduleRender(); };
-  // 전체화면 배율 — 문제가 줄어들지 않고 그대로 들어가는 가장 큰 배율
-  setupFullscreen($('#fs'), () => {
-    const shrank = fitQuestion();
-    const s = $('#stage');
-    return shrank || s.scrollHeight > s.clientHeight + 1 || s.scrollWidth > s.clientWidth + 1;
-  });
+
+  // 전체화면이 되면 세로 공간이 달라지므로 다시 그려 문제 크기를 다시 잰다
+  setupFullscreen($('#fs'), scheduleRender);
 
   document.addEventListener('keydown', e => {
     if (e.target.closest('input, textarea') || !state) return;

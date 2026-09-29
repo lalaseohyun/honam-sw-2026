@@ -81,8 +81,17 @@ body.authed.offline #alert{display:block}
 .choices.long .ch .t{flex:1;font-size:calc(clamp(26px,2.3vw,46px) * var(--cs,1))}
 .choices.long .ch:last-child:nth-child(odd){grid-column:1/-1}
 /* 한 줄에 하나씩(q2 다섯 줄) — 줄 높이를 번호 원이 아니라 글자가 정하도록 원·여백을 줄인다 */
-.choices.rows{gap:clamp(8px,1.1vh,16px);max-width:1500px;width:100%;margin:0 auto}
-.choices.rows .ch{padding:calc(clamp(8px,1.2vh,16px) * var(--cs,1)) clamp(18px,1.6vw,30px)}
+/* 다섯 줄 문항은 세로가 빠듯하다 — 위 여백과 아래 제출현황·조 원을 줄여 보기 칸에 자리를 준다 */
+#stage:has(.choices.rows){padding-top:clamp(28px,4vh,56px)}
+.qview:has(.choices.rows) .tstat{font-size:calc(clamp(28px,2.4vw,44px) * var(--cs,1))}
+.qview:has(.choices.rows) .chip{width:calc(clamp(52px,4.2vw,76px) * var(--cs,1));font-size:calc(clamp(24px,2vw,36px) * var(--cs,1))}
+.qview:has(.choices.rows) .foot{padding-top:clamp(8px,1vh,14px)}
+/* 칸 높이·간격은 고정 — 넘칠 때 글자만 줄고 칸은 넉넉하게 남는다 */
+.choices.rows{gap:clamp(16px,2.2vh,28px);max-width:1500px;width:100%;margin:0 auto}
+.choices.rows .ch{padding:clamp(18px,2.6vh,30px) clamp(22px,2vw,38px)}
+/* 정답 페이지는 해설 박스가 자리를 나눠 쓰므로 칸 여백만 조금 줄인다 */
+.qview.revealed .choices.rows{gap:clamp(10px,1.4vh,18px)}
+.qview.revealed .choices.rows .ch{padding:clamp(10px,1.5vh,18px) clamp(22px,2vw,38px)}
 .choices.rows .ch .n{width:calc(clamp(40px,3vw,58px) * var(--cs,1));height:calc(clamp(40px,3vw,58px) * var(--cs,1));font-size:calc(clamp(22px,1.7vw,32px) * var(--cs,1))}
 .choices.rows .ch .t{font-size:calc(clamp(28px,2.5vw,48px) * var(--cs,1))}
 .qview.revealed .choices.rows .ch .n{width:calc(clamp(36px,2.6vw,50px) * var(--cs,1));height:calc(clamp(36px,2.6vw,50px) * var(--cs,1));font-size:calc(clamp(20px,1.5vw,28px) * var(--cs,1))}

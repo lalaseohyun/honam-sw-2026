@@ -64,7 +64,7 @@ body{display:flex;flex-direction:column;height:100dvh;overflow:hidden;font-size:
 <script type="module">
 import { db, ref, onValue, onConnection } from './js/db.js';
 import { TEAM_NOS, STAGES } from './js/data.js';
-import { setupFullscreen, toggleFullscreen, refit } from './js/stage.js';
+import { setupFullscreen, toggleFullscreen } from './js/stage.js';
 
 const $ = s => document.querySelector(s);
 const esc = s => String(s ?? '').replace(/[&<>"']/g, c => ({ '&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;' }[c]));
@@ -103,7 +103,7 @@ function render() {
   }
   $('#board').innerHTML = html;
   first = false;
-  refit();
+
 }
 
 onConnection(ok => $('#dot').classList.toggle('live', ok));
@@ -113,7 +113,7 @@ onValue(ref(db, 'public'), s => { pub = s.val() || {}; render(); },
 // 방금 들어온 칸 강조를 시간이 지나면 끈다
 setInterval(() => { if ([...freshUntil.values()].some(t => t > Date.now() - 2000)) render(); }, 2000);
 
-setupFullscreen($('#fs'), () => $('#board'));
+setupFullscreen($('#fs'));
 document.addEventListener('keydown', e => { if (e.key === 'f' || e.key === 'F') toggleFullscreen(); });
 
 // 무인 운영 — 화면 꺼짐 방지 (지원하는 브라우저에서만, 탭이 다시 보이면 다시 요청)
