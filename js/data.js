@@ -28,9 +28,10 @@ export const splitMember = m => {
 // 진행 6단계 (사양서 §5 + 주제·상황). summary 필드가 현황판(board)에 뜬다
 // id는 순서가 아니라 이름표 — 행사 당일 맨 앞에 '주제·상황'(s0)을 끼워 넣었다 (s1~s5는 그대로)
 export const STAGES = [
+  // 교수님 패들렛 0단계(Kick-Off)와 같은 항목: 주제 + 주제를 해 보고 싶은 이유
   { id:'s0', name:'주제·상황', photo:true, summary:'topic', fields:[
-    { key:'topic',     label:'주제', hint:'우리 조가 다룰 주제' },
-    { key:'situation', label:'상황', hint:'누가, 언제, 어떤 상황에 놓여 있나요?', long:true } ] },
+    { key:'topic',  label:'주제', hint:'우리 조가 다룰 주제' },
+    { key:'reason', label:'주제 선정 이유', hint:'이 주제를 해 보고 싶은 이유', long:true } ] },
   { id:'s1', name:'문제정의', photo:true, summary:'persona', fields:[
     { key:'persona', label:'페르소나', hint:'누가 가장 불편한가요? (나이·상황·특징)' },
     { key:'problem', label:'문제', hint:'언제, 어떤 상황에서, 무엇 때문에 불편한가요?', long:true } ] },
