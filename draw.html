@@ -79,7 +79,7 @@ const COLORS = ['#fdce0f', '#f3a283', '#8b9dc7', '#97bb7b', '#f7c2cc', '#e8c273'
 
 // ── 판 (논리 좌표) ───────────────────────────
 const W = 1000, H = 1200;
-const BALL_R = 22, PEG_R = 6, BUMPER_R = 30;   // 공을 키워 번호가 크게 보이게
+const BALL_R = 22, PEG_R = 6, BUMPER_R = 30;   // 26으로 키우면 판 곳곳에 끼는 자리가 생겼다(실측) — 대신 번호 글자를 공 가득
 const COL_L = 385, COL_R = 615;   // 가운데 발사관 — 공 5개가 한 줄로 들어가는 폭
 const COL_TOP = 330;              // 발사관 벽 윗끝
 const FINISH_Y = H - 70;
@@ -108,9 +108,11 @@ function build() {
   // 가운데 발사관
   Composite.add(world, [seg(COL_L, COL_TOP, COL_L, H, 24), seg(COL_R, COL_TOP, COL_R, H, 24)]);
   // 지붕 — 솟구친 공을 좌우로 가른다
-  // V자 가름판 — 솟구친 공이 아랫면을 타고 바깥(왼쪽·오른쪽)으로 미끄러져 나간다.
-  // ^ 모양 지붕은 아랫면이 공을 꼭짓점(가운데)으로 모아 전부 발사관으로 도로 떨어뜨렸다(실측)
-  Composite.add(world, [seg(300, 90, W / 2, 235, 30), seg(W / 2, 235, 700, 90, 30)]);
+  // ◇ 가름판 — 아랫면(V)은 솟구친 공을 바깥(왼쪽·오른쪽)으로 미끄러뜨리고, 윗면(^)은 위에서 떨어진 공을 좌우로 흘려보낸다.
+  // (^ 지붕만 두면 솟구친 공이 가운데로 모여 발사관에 도로 떨어졌고, V만 두면 위에서 떨어진 공이 V 골짜기에 멈춰 있었다 — 실측)
+  const diamond = Bodies.fromVertices(W / 2, 150, [[{ x: W / 2, y: 50 }, { x: 690, y: 150 }, { x: W / 2, y: 250 }, { x: 310, y: 150 }]],
+    { isStatic: true, label: 'wall', restitution: 0.45, friction: 0 });
+  Composite.add(world, diamond);
   // 윗부분 좌우 곡선 가이드 — 바깥으로 너무 빨리 튀지 않게
   Composite.add(world, [seg(60, 60, 180, 140), seg(W - 60, 60, W - 180, 140)]);
 
@@ -199,6 +201,20 @@ function step() {
     }
     b.trail.push({ x: b.position.x, y: b.position.y }); if (b.trail.length > 8) b.trail.shift();
     if (!running) continue;
+    // 맴돌기 감지 — 4초 넘게 좁은 범위(140px) 안에서만 오가면(범퍼↔가름판 사이 무한 튕김 등)
+    // 바깥 벽 쪽 아래로 세게 밀어 빼낸다
+    b.frame = (b.frame || 0) + 1;
+    if (b.frame % 30 === 0) {
+      (b.hist ||= []).push({ x: b.position.x, y: b.position.y });
+      if (b.hist.length > 8) b.hist.shift();
+      if (b.hist.length === 8) {
+        const xs = b.hist.map(p => p.x), ys = b.hist.map(p => p.y);
+        if (Math.max(...xs) - Math.min(...xs) < 140 && Math.max(...ys) - Math.min(...ys) < 140 && !inCol(b)) {
+          Body.setVelocity(b, { x: Math.sign(b.position.x - W / 2 || 1) * (5 + rand() * 3), y: 3 });
+          b.hist = [];
+        }
+      }
+    }
     // 좌우 필드 아래 결승선 통과 → 순서 기록
     if (b.position.y > FINISH_Y && !inCol(b)) {
       b.done = true; finished.push(b);
@@ -324,11 +340,11 @@ function draw() {
     }
     // 공 — 광택 있는 구슬
     const rg = ctx.createRadialGradient(b.position.x - 8, b.position.y - 9, 2, b.position.x, b.position.y, BALL_R);
-    rg.addColorStop(0, '#ffffff'); rg.addColorStop(0.22, b.color); rg.addColorStop(1, shade(b.color));
+    rg.addColorStop(0, 'rgba(255,255,255,.9)'); rg.addColorStop(0.16, b.color); rg.addColorStop(1, shade(b.color));
     ctx.fillStyle = rg;
     ctx.beginPath(); ctx.arc(b.position.x, b.position.y, BALL_R, 0, Math.PI * 2); ctx.fill();
-    ctx.fillStyle = '#2c2c2a'; ctx.font = `900 ${b.team >= 10 ? 23 : 27}px ${FONT}`; ctx.textAlign = 'center'; ctx.textBaseline = 'middle';
-    ctx.fillText(String(b.team), b.position.x, b.position.y + 2);
+    ctx.fillStyle = '#2c2c2a'; ctx.font = `900 ${b.team >= 10 ? 27 : 33}px ${FONT}`; ctx.textAlign = 'center'; ctx.textBaseline = 'middle';
+    ctx.fillText(String(b.team), b.position.x, b.position.y + 2.5);
   }
 }
 // 공 가장자리 음영
