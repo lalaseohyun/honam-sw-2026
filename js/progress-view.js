@@ -102,7 +102,7 @@ export function mountProgress(el, teamNo, { openStage } = {}) {
           <span class="fl">${esc(f.label)}</span>
           ${f.hint ? `<span class="fh">${esc(f.hint)}</span>` : ''}
           ${f.long
-            ? `<textarea name="${f.key}" rows="3">${esc(values[f.key] || '')}</textarea>`
+            ? `<textarea name="${f.key}" rows="${f.rows || 3}">${esc(values[f.key] || '')}</textarea>`
             : `<input name="${f.key}" value="${esc(values[f.key] || '')}" autocomplete="off">`}
         </label>`).join('')}
       ${stage.photo ? `

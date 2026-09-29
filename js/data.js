@@ -35,12 +35,9 @@ export const STAGES = [
   { id:'s1', name:'문제정의', photo:true, summary:'persona', fields:[
     { key:'persona', label:'페르소나', hint:'누가 가장 불편한가요? (나이·상황·특징)' },
     { key:'problem', label:'문제정의문(HMW)', hint:'어떻게 하면 ~한 OOO이 ~할 때, ~할 수 있을까?', long:true } ] },
-  { id:'s2', name:'1차 아이디어', summary:'name', fields:[
-    { key:'name',     label:'아이디어 이름' },
-    { key:'target',   label:'대상 고객' },
-    { key:'problem',  label:'해결할 문제', long:true },
-    { key:'solution', label:'해결 방법', long:true },
-    { key:'diff',     label:'차별점', long:true } ] },
+  // 1차 아이디어는 칸 하나에 통으로 붙여넣는다 (행사 당일 요청 — AI 결과를 구분 없이 그대로)
+  { id:'s2', name:'1차 아이디어', summary:'idea', fields:[
+    { key:'idea', label:'1차 아이디어', hint:'정리한 내용이나 AI 결과를 구분 없이 그대로 붙여넣어 주세요', long:true, rows:14 } ] },
   { id:'s3', name:'서비스 구조', photo:true, summary:'feature1', fields:[
     { key:'feature1', label:'핵심 기능 1', long:true },
     { key:'feature2', label:'핵심 기능 2', long:true },
