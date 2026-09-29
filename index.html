@@ -181,7 +181,7 @@ main{flex:1;width:100%;max-width:520px;margin:0 auto;padding:26px 18px 34px;disp
 
 <script type="module">
 import { TEAMS, TEAM_NOS, FIELD_COLORS, splitMember } from './js/data.js';
-import { onConnection } from './js/db.js';
+import { db, ref, onValue, onConnection } from './js/db.js';
 import { mountQuiz, watchQuizReset, clearQuizLocal } from './js/quiz/team.js';
 import { mountProgress } from './js/progress-view.js';
 import { loadSession, saveSession, clearSession, claimTeam, releaseTeam, watchClaims } from './js/auth.js';
@@ -193,8 +193,20 @@ const esc = s => String(s ?? '').replace(/[&<>"']/g, c => ({ '&':'&amp;','<':'&l
 onConnection(ok => $('#dot').classList.toggle('live', ok));
 watchQuizReset();
 
+onValue(ref(db, 'quiz/live/phase'), s => {
+  const running = s.val() === 'quiz';
+  if (running === quizRunning) return;
+  quizRunning = running;
+  if (running) tabPicked = false;          // 새 퀴즈가 시작되면 퀴즈 탭으로 다시 안내
+  if (view === 'main' && !tabPicked) selectTab(defaultTab());
+});
+
 // view: 'select' | 'confirm' | 'loading' | 'taken' | 'released' | 'error' | 'main'
 let view = 'loading', teamNo = null, claims = {};
+// 퀴즈가 진행 중일 때만 퀴즈 탭을 먼저 연다. 끝났거나 시작 전이면 진행 제출 탭이 먼저.
+// 사람이 직접 탭을 누른 뒤에는 건드리지 않는다.
+let quizRunning = false, tabPicked = false;
+const defaultTab = () => quizRunning ? 'quiz' : 'progress';
 
 const membersHTML = n => `<ul class="members">${TEAMS[n].members.map(m => {
   const { univ, name } = splitMember(m);
@@ -262,7 +274,7 @@ function go(v) {
   const tab = app.querySelector('[data-tab][aria-selected="true"]')?.dataset.tab; // 다시 그려도 탭 유지
   delete app.dataset.tab;   // 확인 화면 등에서는 조 카드를 접지 않는다
   app.innerHTML = views[v]();
-  if (v === 'main') selectTab(tab || 'quiz');
+  if (v === 'main') selectTab(tab || defaultTab());
   if (v === 'main') {
     unmountQuiz = mountQuiz(app.querySelector('[data-panel="quiz"]'), teamNo,
       needs => app.querySelector('[data-tab="quiz"]')?.classList.toggle('attn', needs));
@@ -304,7 +316,7 @@ app.addEventListener('click', e => {
   const card = e.target.closest('[data-team]');
   if (card) { teamNo = Number(card.dataset.team); return go('confirm'); }
   const tab = e.target.closest('[data-tab]');
-  if (tab) return selectTab(tab.dataset.tab);
+  if (tab) { tabPicked = true; return selectTab(tab.dataset.tab); }
   const act = e.target.closest('[data-act]')?.dataset.act;
   if (act === 'select') { teamNo = null; go('select'); }
   else if (act === 'claim') claim();
