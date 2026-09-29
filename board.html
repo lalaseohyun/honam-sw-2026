@@ -44,6 +44,17 @@ body{display:flex;flex-direction:column;height:100dvh;overflow:hidden;font-size:
 .foot .note{font-size:24px;color:var(--ink3);margin-right:auto}
 .navlink{font-size:24px;font-weight:700;color:var(--ink3);text-decoration:none;padding:12px 18px;border-radius:16px}
 .navlink:hover{background:var(--soft);color:var(--ink)}
+/* 로그인 — 현황판은 교수진·운영진만 (행사 당일 요청) */
+body:not(.authed) .auth-only{display:none !important}
+body.authed .login-wrap{display:none}
+.login-wrap{flex:1;display:flex;align-items:center;justify-content:center;padding:24px}
+.login{width:min(480px,100%);background:var(--soft);border-radius:24px;padding:36px;display:flex;flex-direction:column;gap:14px}
+.login h1{font-size:30px;font-weight:800;margin-bottom:6px}
+.login p{font-size:24px;color:var(--ink2);line-height:1.4}
+.login input{font:inherit;font-size:24px;padding:14px 18px;border-radius:14px;border:1.5px solid var(--line);background:var(--bg);color:var(--ink)}
+.login button{font-size:24px;font-weight:800;padding:16px;border-radius:14px;background:var(--fill);color:var(--fillInk);margin-top:6px}
+.login .msg{font-size:24px;color:var(--no);min-height:1em}
+
 /* 제출물 크게 보기 */
 .detail{position:fixed;inset:0;z-index:40;background:rgba(0,0,0,.72);display:flex;align-items:center;justify-content:center;padding:4vh 5vw}
 .detail[hidden]{display:none}
@@ -65,7 +76,18 @@ body{display:flex;flex-direction:column;height:100dvh;overflow:hidden;font-size:
 </head>
 <body>
 
-<div class="bar">
+<div class="login-wrap">
+  <form class="login" id="login">
+    <h1>진행 현황판</h1>
+    <p>교수진·운영진 전용이에요. 로그인해 주세요.</p>
+    <input id="email" type="email" autocomplete="username" placeholder="이메일" required>
+    <input id="password" type="password" autocomplete="current-password" placeholder="비밀번호" required>
+    <div class="msg" id="login-msg"></div>
+    <button id="login-btn">로그인</button>
+  </form>
+</div>
+
+<div class="bar auth-only">
   <span class="dot" id="dot"></span>
   <div class="t">2026 호남권 SW 창업아이디어 경진대회</div>
   <div class="h">진행 현황</div>
@@ -73,18 +95,19 @@ body{display:flex;flex-direction:column;height:100dvh;overflow:hidden;font-size:
   <div class="pill" id="total"></div>
 </div>
 
-<div id="board" aria-live="polite"></div>
+<div id="board" class="auth-only" aria-live="polite"></div>
 <!-- 제출물 크게 보기 — #board는 2초마다 다시 그려지므로 바깥에 둔다 -->
 <div class="detail" id="detail" hidden></div>
 
-<div class="foot">
+<div class="foot auth-only">
   <span class="note">라인교육연구소 &nbsp;·&nbsp; 의미있고 재미있게</span>
   <a class="navlink" href="main.html">메인</a>
+  <button id="logout" class="navlink">로그아웃</button>
   <button id="fs" class="fsbtn">⛶ 전체화면</button>
 </div>
 
 <script type="module">
-import { db, ref, get, onValue, onConnection } from './js/db.js';
+import { db, ref, get, onValue, onConnection, loadAuth } from './js/db.js';
 import { TEAMS } from './js/data.js';
 import { TEAM_NOS, STAGES } from './js/data.js';
 import { setupFullscreen, toggleFullscreen } from './js/stage.js';
@@ -129,9 +152,32 @@ function render() {
 
 }
 
-onConnection(ok => $('#dot').classList.toggle('live', ok));
-onValue(ref(db, 'public'), s => { pub = s.val() || {}; render(); },
-  e => { $('#board').innerHTML = `<div class="hd">현황을 불러오지 못했어요: ${esc(e.message)}</div>`; });
+// 로그인해야 구독을 시작한다 — DB 규칙도 /public 전체 읽기는 로그인한 사람만 허용
+function start() {
+  onConnection(ok => $('#dot').classList.toggle('live', ok));
+  onValue(ref(db, 'public'), s => { pub = s.val() || {}; render(); },
+    e => { $('#board').innerHTML = `<div class="hd">현황을 불러오지 못했어요: ${esc(e.message)}</div>`; });
+}
+
+loadAuth().then(({ auth, onAuthStateChanged, signInWithEmailAndPassword, signOut }) => {
+  let started = false;
+  $('#login').onsubmit = async e => {
+    e.preventDefault();
+    $('#login-msg').textContent = '';
+    $('#login-btn').disabled = true;
+    try { await signInWithEmailAndPassword(auth, $('#email').value.trim(), $('#password').value); }
+    catch (err) {
+      $('#login-msg').textContent = /invalid|wrong|user-not-found/i.test(err.code) ? '이메일 또는 비밀번호가 맞지 않아요' : `로그인 실패: ${err.code}`;
+    }
+    $('#login-btn').disabled = false;
+  };
+  $('#logout').onclick = () => confirm('로그아웃할까요?') && signOut(auth);
+  onAuthStateChanged(auth, user => {
+    document.body.classList.toggle('authed', !!user);
+    if (user && !started) { started = true; start(); }
+    if (!user && started) location.reload();
+  });
+});
 
 // 방금 들어온 칸 강조를 시간이 지나면 끈다
 setInterval(() => { if ([...freshUntil.values()].some(t => t > Date.now() - 2000)) render(); }, 2000);
@@ -172,7 +218,7 @@ document.addEventListener('keydown', e => { if (e.key === 'Escape' && !$('#detai
 
 setupFullscreen($('#fs'));
 $('#board').style.setProperty('--stages', STAGES.length);
-document.addEventListener('keydown', e => { if (e.key === 'f' || e.key === 'F') toggleFullscreen(); });
+document.addEventListener('keydown', e => { if (!e.target.closest('input, textarea') && (e.key === 'f' || e.key === 'F')) toggleFullscreen(); });
 
 // 무인 운영 — 화면 꺼짐 방지 (지원하는 브라우저에서만, 탭이 다시 보이면 다시 요청)
 async function keepAwake() {
