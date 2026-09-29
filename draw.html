@@ -13,12 +13,10 @@
    지붕에서 좌우로 갈라져 회전 막대·범퍼·핀 사이를 퉁퉁 튕기며 내려온다.
    아래 결승선에 먼저 닿은 순서가 발표 순서. */
 body{display:flex;flex-direction:column;height:100dvh;overflow:hidden}
-.bar{display:flex;align-items:center;gap:16px;padding:clamp(8px,1.5vh,16px) 28px;border-bottom:1px solid var(--line);flex:none}
-.bar .t{font-size:clamp(16px,2vh,22px);font-weight:700;color:var(--ink2)}
-.bar .h{font-size:clamp(24px,3.4vh,36px);font-weight:800;letter-spacing:-.03em}
-.bar .sp{flex:1}
-.bar a,.bar button{font-size:clamp(15px,1.9vh,20px);font-weight:700;padding:clamp(6px,1vh,10px) 18px;border-radius:14px;color:var(--ink2);text-decoration:none;background:var(--soft)}
-.bar .fsbtn{background:rgba(253,242,220,.14);color:var(--fill)}
+/* 상단 제목 줄 없이 판을 화면 높이 가득 — 메인·전체화면은 오른쪽 아래 */
+.subbtns{display:flex;gap:10px}
+.subbtns a,.subbtns button{flex:1;text-align:center;font-size:clamp(15px,1.9vh,20px);font-weight:700;padding:clamp(8px,1.2vh,12px) 14px;border-radius:14px;color:var(--ink2);text-decoration:none;background:var(--soft)}
+.subbtns .fsbtn{background:rgba(253,242,220,.14);color:var(--fill)}
 
 .body{flex:1;min-height:0;display:flex;gap:24px;padding:18px 28px 22px}
 .stagewrap{flex:1;min-width:0;display:flex;align-items:center;justify-content:center;position:relative}
@@ -54,13 +52,6 @@ canvas{display:block;border-radius:24px}
 </head>
 <body>
 
-<div class="bar">
-  <div class="t">2026 호남권 SW 창업아이디어 경진대회</div>
-  <div class="h">발표 순서 뽑기</div>
-  <div class="sp"></div>
-  <a href="main.html">메인</a>
-  <button id="fs" class="fsbtn">⛶ 전체화면</button>
-</div>
 
 <div class="body">
   <div class="stagewrap" id="wrap"><canvas id="cv"></canvas><div class="count" id="count"></div></div>
@@ -71,6 +62,7 @@ canvas{display:block;border-radius:24px}
       <button id="start">START</button>
       <button id="reset">다시</button>
     </div>
+    <div class="subbtns"><a href="main.html">메인</a><button id="fs" class="fsbtn">⛶ 전체화면</button></div>
     <div class="hint">Space 시작 · R 다시 · F 전체화면</div>
   </aside>
 </div>
