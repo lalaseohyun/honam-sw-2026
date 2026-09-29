@@ -116,7 +116,9 @@ function build() {
   // 가운데 발사관
   Composite.add(world, [seg(COL_L, COL_TOP, COL_L, H, 24), seg(COL_R, COL_TOP, COL_R, H, 24)]);
   // 지붕 — 솟구친 공을 좌우로 가른다
-  Composite.add(world, [seg(330, 250, W / 2, 140, 30), seg(W / 2, 140, 670, 250, 30)]);
+  // V자 가름판 — 솟구친 공이 아랫면을 타고 바깥(왼쪽·오른쪽)으로 미끄러져 나간다.
+  // ^ 모양 지붕은 아랫면이 공을 꼭짓점(가운데)으로 모아 전부 발사관으로 도로 떨어뜨렸다(실측)
+  Composite.add(world, [seg(300, 90, W / 2, 235, 30), seg(W / 2, 235, 700, 90, 30)]);
   // 윗부분 좌우 곡선 가이드 — 바깥으로 너무 빨리 튀지 않게
   Composite.add(world, [seg(60, 60, 180, 140), seg(W - 60, 60, W - 180, 140)]);
 
@@ -144,7 +146,8 @@ function build() {
   const spots = shuffle([...Array(TEAMS).keys()]);
   spots.forEach((spot, ti) => {
     const col = spot % 5, row = Math.floor(spot / 5);
-    const b = Bodies.circle(COL_L + 27 + col * 44, H - BALL_R - 2 - row * (BALL_R * 2 + 1), BALL_R,
+    // 가운데 줄 공이 V 꼭짓점에 정통으로 맞지 않도록 좌우로 조금씩 흔들어 둔다
+    const b = Bodies.circle(COL_L + 27 + col * 44 + (rand() - 0.5) * 8, H - BALL_R - 2 - row * (BALL_R * 2 + 1), BALL_R,
       { restitution: 0.55, friction: 0.001, frictionAir: 0.0012, density: 0.002, label: 'ball' });   // 공기 저항이 크면 지붕까지 못 올라간다
     b.team = ti + 1; b.color = COLORS[ti]; b.trail = [];
     balls.push(b);
@@ -241,8 +244,9 @@ function step() {
   // 모든 공이 발사관을 빠져나가면 뚜껑을 닫는다 — 경기 중 발사관으로 되돌아가 다시 쏘느라 길어지지 않게.
   // 뚜껑은 ^ 모양이라 위에 떨어진 공은 좌우로 굴러 내려간다
   // 발사관 위(지붕 아래)까지 비었을 때만 — 올라가는 중인 공을 가둬 버리면 안 된다
-  const nearTube = b => b.position.x > COL_L - BALL_R && b.position.x < COL_R + BALL_R && b.position.y > 120;
-  if (running && !lid && launchedAt && performance.now() - launchedAt > 1200 && !balls.some(b => !b.done && nearTube(b))) {
+  // 뚜껑 자리(발사관 바로 위)와 그 아래에 공이 없을 때 — 뚜껑이 공과 겹쳐 닫히면 공이 발사관에 갇힌다
+  const nearTube = b => b.position.x > COL_L - BALL_R && b.position.x < COL_R + BALL_R && b.position.y > 245;
+  if (running && !lid && launchedAt && performance.now() - launchedAt > 300 && !balls.some(b => !b.done && nearTube(b))) {
     const t = 14, cx = (COL_L + COL_R) / 2, y0 = COL_TOP - 10, y1 = COL_TOP - 50;
     const mk = (x0, ya, x1, yb) => Bodies.rectangle((x0 + x1) / 2, (ya + yb) / 2, Math.hypot(x1 - x0, yb - ya) + t, t,
       { isStatic: true, angle: Math.atan2(yb - ya, x1 - x0), label: 'lid', restitution: 0.4, friction: 0, chamfer: { radius: 6.5 } });
@@ -359,6 +363,9 @@ document.addEventListener('keydown', e => {
 });
 setupFullscreen($('#fs'), fit);
 window.addEventListener('resize', fit);
+
+// 점검용 — 콘솔에서 공 상태 확인
+window.__draw = { get balls() { return balls; }, get engine() { return engine; } };
 
 build(); fit(); requestAnimationFrame(step);
 </script>
