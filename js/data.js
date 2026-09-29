@@ -25,11 +25,11 @@ export const splitMember = m => {
   return { univ, name: rest.join(' ') };
 };
 
-// 진행 6단계 (사양서 §5 + 주제·상황). summary 필드가 현황판(board)에 뜬다
-// id는 순서가 아니라 이름표 — 행사 당일 맨 앞에 '주제·상황'(s0)을 끼워 넣었다 (s1~s5는 그대로)
+// 진행 6단계 (사양서 §5 + 주제·선정이유). summary 필드가 현황판(board)에 뜬다
+// id는 순서가 아니라 이름표 — 행사 당일 맨 앞에 '주제·선정이유'(s0)를 끼워 넣었다 (s1~s5는 그대로)
 export const STAGES = [
   // 교수님 패들렛 0단계(Kick-Off)와 같은 항목: 주제 + 주제를 해 보고 싶은 이유
-  { id:'s0', name:'주제·상황', photo:true, summary:'topic', fields:[
+  { id:'s0', name:'주제·선정이유', photo:true, summary:'topic', fields:[
     { key:'topic',  label:'주제', hint:'우리 조가 다룰 주제' },
     { key:'reason', label:'주제 선정 이유', hint:'이 주제를 해 보고 싶은 이유', long:true } ] },
   { id:'s1', name:'문제정의', photo:true, summary:'persona', fields:[
@@ -49,8 +49,8 @@ export const STAGES = [
   { id:'s4', name:'사업화 전략', photo:true, photoLabel:'사진(비즈니스모델)', summary:'revenue', fields:[
     { key:'revenue',  label:'수익 모델', hint:'누가, 무엇에, 얼마를 내나요?', long:true },
     { key:'customer', label:'고객 확보 방법', long:true } ] },
-  { id:'s5', name:'발표자료', pdf:true, fields:[
-    { key:'message', label:'발표 핵심 메시지', hint:'심사위원이 기억했으면 하는 한 문장', long:true } ] }
+  // 발표자료는 PDF만 올린다 (핵심 메시지 칸은 행사 당일 뺐다)
+  { id:'s5', name:'발표자료', pdf:true, fields:[] }
 ];
 
 // 문제의 \n은 빔프로젝터에서 줄을 바꾸는 자리 — 문제가 두 줄로 나오게 끊어 두었다
