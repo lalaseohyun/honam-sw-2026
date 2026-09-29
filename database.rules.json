@@ -1,9 +1,10 @@
 {
   "rules": {
     "public": {
-      ".read": true,
+      ".read": "auth != null",
       ".write": "auth != null",
       "$team": {
+        ".read": true,
         ".write": "auth != null",
         "$stage": {
           ".write": true,
