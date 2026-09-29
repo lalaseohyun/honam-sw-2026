@@ -212,6 +212,8 @@ body.bar-hidden .ctl{display:none}
 .ctl button.danger{background:transparent;color:var(--no)}
 .ctl button.on{background:var(--panel2);color:var(--yellow)}
 .ctl .sp{flex:1}
+.ctl .navlink{font-size:15px;font-weight:600;color:var(--ink2);text-decoration:none;padding:12px 14px;border-radius:11px}
+.ctl .navlink:hover{background:var(--soft)}
 .pill{display:flex;align-items:center;gap:8px;font-size:13.5px;font-weight:600;color:var(--ink2);background:var(--soft);padding:8px 15px;border-radius:999px;white-space:nowrap}
 .pill b{color:var(--yellow);font-weight:800}
 .dot{width:8px;height:8px;border-radius:50%;background:var(--no);flex:none}
@@ -257,6 +259,7 @@ body.bar-hidden .ctl{display:none}
   <div class="sp"></div>
   <span class="pill"><span class="dot" id="dot"></span><span id="joined"></span></span>
   <button id="toggle-rank" class="ghost" title="R">순위</button>
+  <a class="navlink" href="main.html">메인</a>
   <button id="logout" class="ghost">로그아웃</button>
   <button id="fs" class="fsbtn" title="F">⛶ 전체화면</button>
 </div>

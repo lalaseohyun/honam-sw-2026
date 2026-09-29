@@ -1,0 +1,58 @@
+<!doctype html>
+<html lang="ko">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<meta name="theme-color" content="#2c2c2a">
+<title>진행자 메인 · 2026 호남권 SW 창업아이디어 경진대회</title>
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/gh/orioncactus/pretendard@v1.3.9/dist/web/variable/pretendardvariable-dynamic-subset.min.css">
+<link rel="stylesheet" href="css/tokens.css">
+<style>
+/* 진행자 메인 — 진행에 쓰는 화면들로 가는 입구 (가야면·정읍 앱의 첫 화면과 같은 구성) */
+body{display:flex;flex-direction:column}
+.home{flex:1;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:28px;padding:40px 16px;text-align:center}
+.kicker{color:var(--yellow);font-weight:800;font-size:15px;letter-spacing:.08em}
+.title{font-size:clamp(28px,4.4vw,46px);font-weight:800;letter-spacing:-.03em;line-height:1.25}
+.links{display:flex;flex-direction:column;gap:12px;width:100%;max-width:440px}
+.links a{display:flex;align-items:center;gap:16px;text-align:left;text-decoration:none;
+  background:var(--soft);color:var(--ink);border-radius:16px;padding:18px 22px;transition:.15s}
+.links a:hover{background:var(--panel2)}
+.links a:active{transform:scale(.98)}
+.links a.primary{background:var(--yellow);color:#2c2c2a}
+.links .tx{flex:1}
+.links b{display:block;font-size:19px;font-weight:800;letter-spacing:-.02em}
+.links span{display:block;font-size:13.5px;font-weight:500;margin-top:3px;color:var(--ink2)}
+.links a.primary span{color:rgba(44,44,42,.65)}
+.links .ar{font-size:20px;font-weight:800}
+.note{color:var(--ink3);font-size:13.5px;line-height:1.7;max-width:34em}
+.foot{padding:18px 16px 24px;text-align:center;font-size:12px;color:var(--ink3);font-weight:500}
+</style>
+</head>
+<body>
+<main class="home">
+  <div>
+    <div class="kicker">진행자 메인</div>
+    <h1 class="title">2026 호남권 SW<br>창업아이디어 경진대회</h1>
+  </div>
+
+  <nav class="links">
+    <a class="primary" href="board.html">
+      <div class="tx"><b>진행 현황판</b><span>빔프로젝터 · 조별 단계 제출 현황</span></div><div class="ar">→</div>
+    </a>
+    <a href="admin.html">
+      <div class="tx"><b>운영자 · 직접 입력</b><span>조별 내용 입력·수정, 제출물 보기, 내보내기 (로그인)</span></div><div class="ar">→</div>
+    </a>
+    <a href="host.html">
+      <div class="tx"><b>퀴즈 진행</b><span>오프닝 퀴즈 · QR 대기화면부터 (로그인)</span></div><div class="ar">→</div>
+    </a>
+    <a href="./" target="_blank" rel="noopener">
+      <div class="tx"><b>참여자 화면</b><span>조별 대표자 폰 화면 미리 보기 (새 탭)</span></div><div class="ar">↗</div>
+    </a>
+  </nav>
+
+  <p class="note">각 화면 조작 바의 <b>메인</b> 버튼으로 이 페이지에 돌아올 수 있어요.<br>
+    참여자 화면을 이 노트북에서 열어 조를 고르면 그 조의 대표 폰으로 등록되니 둘러보기만 하세요.</p>
+</main>
+<div class="foot">라인교육연구소 &nbsp;·&nbsp; 의미있고 재미있게</div>
+</body>
+</html>

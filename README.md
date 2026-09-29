@@ -6,6 +6,7 @@
 
 | 화면 | 주소 | 누가 |
 |---|---|---|
+| **진행자 메인** | https://lalaseohyun.github.io/honam-sw-2026/main.html | 진행자 — 아래 화면들로 가는 입구 |
 | 참여자 | https://lalaseohyun.github.io/honam-sw-2026/ | 조별 대표자 폰 (진행자 화면 QR) |
 | 퀴즈 진행자 | https://lalaseohyun.github.io/honam-sw-2026/host.html | 진행자 노트북 → 빔프로젝터 (운영자 로그인) |
 | 진행 현황판 | https://lalaseohyun.github.io/honam-sw-2026/board.html | 빔프로젝터 |
